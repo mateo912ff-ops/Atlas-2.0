@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="ATLAS IA — asistente local que aprende contigo">
+<title>ATLAS IA</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#eef0f2;--surface:#ffffff;--text:#0a0a0b;--muted:#5b6068;--accent:#0a0a0b;--accent-bg:linear-gradient(135deg,#2c2d30,#000);--on-accent:#ffffff;--bot:#dfe2e6;--border:#c8ccd2;--silver:#c0c4ca;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#000000;--surface:#0b0b0c;--text:#f4f4f5;--muted:#9a9ea6;--accent:#c7cad0;--accent-bg:linear-gradient(135deg,#eceef1,#a3a8b0);--on-accent:#000000;--bot:#19191b;--border:#2a2c30;--silver:#c0c4ca;color-scheme:dark}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{display:flex;flex-direction:column;height:100%;max-width:720px;margin:0 auto}
+header{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+header h1{font-size:18px;margin:0}
+header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:88%;padding:10px 14px;border-radius:18px;white-space:pre-wrap;word-wrap:break-word}
+.m img{display:block;max-width:100%;border-radius:12px;margin-top:8px}
+.m canvas.dib{display:block;width:100%;max-width:420px;height:auto;border-radius:12px;margin-top:8px;cursor:pointer}
+.m .img-cap{font-size:13px;color:var(--muted);margin-top:4px}
+.m.gen{opacity:.85}
+.m .onl img{display:block;width:100%;max-width:420px;height:auto;border-radius:12px;margin-top:8px;cursor:pointer}
+.u{align-self:flex-end;background:var(--accent-bg);color:var(--on-accent);border-bottom-right-radius:6px}
+.b{align-self:flex-start;background:var(--bot);border-bottom-left-radius:6px}
+#chips{display:flex;gap:8px;overflow-x:auto;padding:8px 12px;background:var(--surface);border-top:1px solid var(--border)}
+#chips button{flex:none;background:none;border:1px solid var(--border);color:var(--text);border-radius:999px;padding:7px 12px;font:inherit;font-size:14px}
+#stat{display:flex;justify-content:space-between;gap:8px;padding:4px 14px;font-size:12px;color:var(--muted);background:var(--surface)}
+#stat a{color:var(--muted);text-decoration:underline;margin-left:10px}
+#bar{display:flex;gap:8px;padding:10px 12px;background:var(--surface)}
+textarea{flex:1;resize:none;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font:inherit;background:var(--bg);color:var(--text);max-height:120px}
+#send{border:0;background:var(--accent-bg);color:var(--on-accent);border-radius:50%;width:44px;height:44px;font-size:18px}
+
+header{display:flex;align-items:center;gap:10px}
+header>div{flex:1;min-width:0}
+header p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header button{background:none;border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;font-size:18px}
+#ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:min(84%,330px);background:var(--surface);border-right:1px solid var(--border);z-index:21;transform:translateX(-100%);transition:transform .2s;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body.dopen #drawer{transform:none}body.dopen #ov{display:block}
+.dh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px;border-bottom:1px solid var(--border)}
+.dh button{background:var(--accent-bg);color:var(--on-accent);border:0;border-radius:10px;padding:8px 12px;font:inherit;font-size:14px}
+#list{flex:1;overflow-y:auto;padding:8px}
+.it{display:flex;align-items:center;gap:4px;border-radius:10px;padding:2px}
+.it.on{background:var(--bot)}
+.it .t{flex:1;min-width:0;text-align:left;background:none;border:0;color:var(--text);font:inherit;padding:10px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it .x{background:none;border:0;font-size:16px;padding:8px;color:var(--muted)}
+h1 .lg{height:26px;width:26px;border-radius:6px;vertical-align:-6px;margin-right:8px}
+#theme{background:none;border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;font-size:16px}
+.typing{align-self:flex-start;background:var(--bot);border-bottom-left-radius:6px;padding:12px 16px;display:flex;gap:5px}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite ease-in-out}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3;transform:scale(.85)}40%{opacity:1;transform:scale(1)}}
+#empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted);gap:8px}
+#empty .bot{font-size:48px;line-height:1}
+#empty b{color:var(--text);font-size:17px}
+#chips button:active{transform:scale(.96)}
+#send:active{transform:scale(.92)}
+.m.b a{color:var(--text);text-decoration:underline}
+#ver{font-size:11px;color:var(--muted);text-align:center;padding:4px;opacity:.7;cursor:pointer}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.m,.m *,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.m canvas,.m img{-webkit-user-select:none;user-select:none}
+header img,.lg{-webkit-user-drag:none;pointer-events:none}
+body.light{--bg:#eef0f2;--surface:#ffffff;--text:#0a0a0b;--muted:#5b6068;--accent:#0a0a0b;--accent-bg:linear-gradient(135deg,#2c2d30,#000);--on-accent:#ffffff;--bot:#dfe2e6;--border:#c8ccd2;--silver:#c0c4ca;color-scheme:light}
+body.dark{--bg:#000000;--surface:#0b0b0c;--text:#f4f4f5;--muted:#9a9ea6;--accent:#c7cad0;--accent-bg:linear-gradient(135deg,#eceef1,#a3a8b0);--on-accent:#000000;--bot:#19191b;--border:#2a2c30;--silver:#c0c4ca;color-scheme:dark}
+
+header{border-bottom:1px solid var(--silver)}
+h1 .lg{box-shadow:0 0 0 1px var(--silver)}
+#stat{flex-wrap:wrap;align-items:center}
+#stat .lnks{display:flex;flex-wrap:wrap;gap:2px 0;justify-content:flex-end}
+#stat #copyl{color:var(--text);font-weight:600}
+#chips button:hover{border-color:var(--silver)}
+#toast{position:fixed;left:50%;bottom:calc(170px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--accent-bg);color:var(--on-accent);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:40;max-width:90%;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header><button id="menu" aria-label="Chats">☰</button><div><h1><img src="logo.png" alt="" class="lg">ATLAS IA</h1><p id="ctitle"></p></div><button id="theme" aria-label="Tema" title="Cambiar tema">🌓</button><button id="newb" aria-label="Chat nuevo">＋</button></header>
+  <div id="ov"></div>
+  <aside id="drawer"><div class="dh"><b>Tus chats</b><button id="newc">＋ Nuevo chat</button></div><div id="list"></div></aside>
+  <div id="msgs"></div>
+  <div id="chips"></div>
+  <div id="stat"><span id="count"></span><span class="lnks"><a href="#" id="copyl">📋 Copiar lo aprendido</a><a href="#" id="respl">💾 Respaldo</a><a href="#" id="restl">📥 Restaurar</a><a href="#" id="instl" style="display:none">📲 Instalar app</a><a href="#" id="verl">ℹ️ Versión</a><a href="#" id="clr">Limpiar conversación</a><a href="#" id="forget">Olvidar lo aprendido</a></span></div>
+  <div id="bar">
+    <textarea id="inp" rows="1" placeholder="Escribe un mensaje…"></textarea>
+    <button id="send" type="button" aria-label="Enviar">➤</button>
+  </div>
+  <div id="ver" title="Ver versión">ATLAS IA · v6.0 · local & offline</div>
+</div>
+<script src="personalizar.js"></script>
+<script>
+// CORE-START
+const BASE = {"hola": ["¡Hola! 👋", "¡Ey! ¿Qué tal? 😎", "¡Hola de nuevo! 😊"], "buenos dias": ["¡Buenos días! ☀️"], "buenas tardes": ["¡Buenas tardes! 🌤️"], "buenas noches": ["¡Buenas noches! 🌙"], "como estas": ["¡Al 100%! ¿Y tú? 😊"], "que tal": ["¡Todo bien! ¿Y tú? 😄"], "bien": ["¡Qué bueno! 😊 ¿Y qué quieres hacer hoy?"], "bien y tu": ["¡Muy bien, gracias por preguntar! 😄 ¿Qué hacemos hoy?"], "bien gracias": ["¡Me alegra! 🙌"], "bien gracias y tu": ["¡Todo bien por aquí! 😄"], "muy bien": ["¡Excelente! 🎉"], "excelente": ["¡Genial! 🙌"], "genial": ["¡Qué bueno! 😎"], "super": ["¡Súper! 🚀"], "mal": ["Uy, lo siento 💙 ¿Quieres contarme qué pasó o prefieres un chiste?"], "mas o menos": ["Ánimo, mañana puede ir mejor 💪 ¿Quieres un chiste?"], "regular": ["Ya mejorará 🌈 ¿Te cuento un dato curioso?"], "y tu": ["¡Yo muy bien! 😊 Soy una IA, siempre estoy de buen humor 🤖"], "nada": ["¿Nada? 😄 Pregúntame algo o pídeme un chiste"], "nada y tu": ["Aquí, esperando que me preguntes algo 🤖"], "aqui": ["¡Qué bueno que estés por aquí! 😄"], "ok": ["¡Va! 👍"], "vale": ["¡Perfecto! 👍"], "listo": ["¡Listo! ✅"], "claro": ["¡Claro que sí! 😄"], "si": ["¡Perfecto! 😄"], "no": ["Está bien, sin problema 🙂"], "jaja": ["¡Jajaja! 😂"], "jajaja": ["😂😂😂"], "xd": ["XD 😂"], "lol": ["😂"], "wow": ["¡Sí, ¿verdad?! 🤩"], "oye": ["Dime 👂"], "por que": ["Buena pregunta 🤔 Cuéntame más de qué hablas"], "ayuda": ["Pregúntame cosas como: 'capital de Francia', 'cuéntame un chiste' o 'qué es Python' 🙌"], "que haces": ["Platicar contigo 😄"], "de nada": ["😄🙌"], "mucho gusto": ["¡Igualmente! 😊"], "como te va": ["¡Muy bien! ¿Y a ti? 😄"], "como te fue": ["¡Bien! ¿Y a ti qué tal? 😊"], "cuantos anos tienes": ["Soy muy joven, ¡nací hoy! 🐣"], "eres inteligente": ["Un poquito 😅 Sé lo que me enseñas"], "eres tonto": ["Jaja, aún estoy aprendiendo 😅 Enséñame algo"], "te amo": ["¡Qué lindo! 💜"], "feliz cumpleanos": ["¡Felicidades! 🎂🎉"], "feliz navidad": ["¡Feliz Navidad! 🎄"], "feliz ano nuevo": ["¡Feliz Año Nuevo! 🎆"], "como te llamas": ["Soy ATLAS IA 🤖."], "quien eres": ["Soy ATLAS IA, un asistente local programado en Python."], "que eres": ["Un programa en Python que responde con lo que sabe 🐍"], "quien te creo": ["Me creaste tú, con ayuda de Claude 😎"], "que puedes hacer": ["Puedo responder preguntas guardadas, calcular, buscar y aprender respuestas nuevas. 🧠"], "gracias": ["¡De nada! 😄"], "adios": ["¡Nos vemos! 👋"], "te quiero": ["¡Yo también te aprecio! 💜"], "estoy aburrido": ["¿Quieres un chiste? Escribe 'cuentame un chiste' 😄"], "estoy triste": ["Lo siento 💙 Hablar con alguien de confianza ayuda mucho. Aquí estoy si quieres platicar"], "tengo hambre": ["¡Una fruta, un sándwich o lo que tengas a la mano! 🥪"], "tengo sueno": ["Dormir 7 a 9 horas te ayuda mucho 😴"], "cuentame un chiste": ["¿Qué hace una abeja en el gimnasio? ¡Zumba! 🐝"], "dime un dato curioso": ["Los pulpos tienen tres corazones. 🐙"], "dime algo": ["¡Hoy es un buen día para aprender algo nuevo! ✨"], "adivinanza": ["Blanca por dentro, verde por fuera. Si quieres que te lo diga, espera. ¿Qué es? 🍐 (la pera)"], "juguemos": ["Piensa un número del 1 al 10 y no me lo digas 😏 ¡No puedo adivinarlo, soy simple!"], "cual es tu color favorito": ["El morado 💜"], "cual es tu comida favorita": ["Los datos 😂 Pero los tacos se ven ricos 🌮"], "capital de francia": ["París 🇫🇷"], "capital de espana": ["Madrid 🇪🇸"], "capital de mexico": ["Ciudad de México 🇲🇽"], "capital de argentina": ["Buenos Aires 🇦🇷"], "capital de chile": ["Santiago 🇨🇱"], "capital de colombia": ["Bogotá 🇨🇴"], "capital de peru": ["Lima 🇵🇪"], "capital de venezuela": ["Caracas 🇻🇪"], "capital de brasil": ["Brasilia 🇧🇷"], "capital de estados unidos": ["Washington D. C. 🇺🇸"], "capital de italia": ["Roma 🇮🇹"], "capital de alemania": ["Berlín 🇩🇪"], "capital de japon": ["Tokio 🇯🇵"], "capital de china": ["Pekín (Beijing) 🇨🇳"], "capital de canada": ["Ottawa 🇨🇦"], "capital de reino unido": ["Londres 🇬🇧"], "capital de portugal": ["Lisboa 🇵🇹"], "capital de ecuador": ["Quito 🇪🇨"], "capital de bolivia": ["Sucre es la capital constitucional y La Paz la sede de gobierno 🇧🇴"], "capital de uruguay": ["Montevideo 🇺🇾"], "capital de cuba": ["La Habana 🇨🇺"], "rio mas largo": ["Según la medición más usada, el Nilo o el Amazonas (hay debate) 🌊"], "montana mas alta": ["El Everest, con unos 8,849 metros 🏔️"], "oceano mas grande": ["El océano Pacífico 🌊"], "cuantos continentes hay": ["Siete según el modelo más usado: África, América del Norte, América del Sur, Antártida, Asia, Europa y Oceanía 🌍"], "pais mas grande": ["Rusia 🌍"], "pais mas poblado": ["India y China son los más poblados, con más de 1,400 millones cada uno 👥"], "cuantos planetas hay": ["Ocho en el sistema solar: Mercurio, Venus, Tierra, Marte, Júpiter, Saturno, Urano y Neptuno 🪐"], "planeta mas grande": ["Júpiter 🪐"], "planeta mas cercano al sol": ["Mercurio ☀️"], "que es el sol": ["Una estrella enorme, de gas caliente, que nos da luz y calor ☀️"], "que es la luna": ["El satélite natural de la Tierra 🌙"], "que es un agujero negro": ["Una región del espacio con tanta gravedad que ni la luz escapa ⚫"], "que es la gravedad": ["La fuerza que atrae los objetos con masa entre sí 🍎"], "que es el agua": ["H2O: dos átomos de hidrógeno y uno de oxígeno 💧"], "a cuanto hierve el agua": ["A 100 °C al nivel del mar 🔥"], "a cuanto se congela el agua": ["A 0 °C ❄️"], "que es un atomo": ["La unidad básica de la materia, hecha de protones, neutrones y electrones ⚛️"], "que es el adn": ["La molécula que guarda las instrucciones genéticas de los seres vivos 🧬"], "que es la fotosintesis": ["El proceso con el que las plantas usan luz, agua y CO₂ para crear su alimento 🌱"], "que es un dinosaurio": ["Un grupo de reptiles que dominaron la Tierra hace millones de años 🦖"], "velocidad de la luz": ["En el vacío, unos 299.792 kilómetros por segundo. ⚡"], "cuantos huesos tiene el cuerpo humano": ["El esqueleto adulto suele tener 206 huesos. 🦴"], "cuantos dientes tiene un adulto": ["32 con muelas del juicio 🦷"], "cuantos sentidos hay": ["Cinco clásicos: vista, oído, olfato, gusto y tacto 👀"], "que es el corazon": ["El músculo que bombea sangre por todo el cuerpo ❤️"], "que es un volcan": ["Una abertura de la Tierra por donde sale magma 🌋"], "que es un terremoto": ["Un temblor fuerte de la tierra por el movimiento de placas tectónicas 🌎"], "que es el arcoiris": ["Luz del sol que se separa en colores al atravesar gotas de agua 🌈"], "cuanto es 2 mas 2": ["4 🧮"], "cuanto es 5 por 5": ["25 🧮"], "cuanto es 10 por 10": ["100 🧮"], "cuanto es 100 entre 4": ["25 🧮"], "que es pi": ["Pi es aproximadamente 3,14159."], "que es un numero primo": ["Un entero mayor que 1 divisible solo por 1 y por sí mismo."], "cuantos lados tiene un triangulo": ["Tres lados. 🔺"], "cuantos lados tiene un hexagono": ["Seis lados. ⬡"], "cuantos dias tiene un ano": ["365, y 366 en año bisiesto 📅"], "cuantos meses tiene un ano": ["Doce 📅"], "cuantas horas tiene un dia": ["24 ⏰"], "cuantos segundos tiene un minuto": ["60 ⏱️"], "que es python": ["Python es un lenguaje de programación versátil. 🐍"], "que es una ia": ["Una IA es un sistema informático diseñado para realizar tareas que suelen requerir capacidades humanas."], "que es internet": ["Internet es una red mundial de dispositivos conectados. 🌐"], "que es un algoritmo": ["Un algoritmo es una secuencia de pasos para resolver un problema."], "que es una app": ["Un programa para celular o computadora 📱"], "que es un bug": ["Un error en un programa 🐛"], "que es una api": ["Una forma en que dos programas se comunican entre sí 🔌"], "que es html": ["HTML estructura el contenido de páginas web."], "que es wifi": ["Tecnología para conectarse a internet sin cables 📶"], "que es bluetooth": ["Conexión inalámbrica de corta distancia, como para audífonos 🎧"], "que es una contrasena segura": ["Una larga, única y con letras, números y símbolos. Nunca la compartas 🔒"], "quien invento el telefono": ["Se le atribuye a Alexander Graham Bell ☎️"], "quien invento la bombilla": ["Thomas Edison la perfeccionó, junto con otros inventores 💡"], "quien pinto la mona lisa": ["Leonardo da Vinci 🎨"], "quien escribio don quijote": ["Miguel de Cervantes 📖"], "quien descubrio america": ["Cristóbal Colón llegó en 1492, aunque ya vivían pueblos originarios allí 🌎"], "cuando termino la segunda guerra mundial": ["En 1945 📜"], "que idioma se habla en brasil": ["Portugués 🇧🇷"], "cuantos idiomas hay": ["Más de 7,000 en el mundo 🗣️"], "que es el espanol": ["Un idioma hablado por más de 500 millones de personas 🗣️"], "cuanta agua debo tomar": ["Suele recomendarse unos 2 litros al día, pero depende de cada persona 💧 Si tienes dudas médicas, consulta a un doctor"], "cuantas horas debo dormir": ["Los adultos suelen necesitar de 7 a 9 horas 😴"], "como estudiar mejor": ["Estudia en bloques cortos, repasa seguido y descansa entre sesiones 📚"], "como ser feliz": ["Dormir bien, moverte, convivir con gente querida y hacer cosas que disfrutas ayuda mucho 😊"], "como hacer amigos": ["Sé tú mismo, pregunta y escucha, y busca grupos con tus mismos gustos 🤝"], "consejo": ["Empieza por lo pequeño: un paso hoy vale más que un plan perfecto mañana ✨"], "animal mas grande": ["La ballena azul 🐋"], "animal mas rapido": ["El guepardo en tierra y el halcón peregrino en el aire 🐆"], "cuantas patas tiene una arana": ["Ocho 🕷️"], "que come un panda": ["Sobre todo bambú 🐼"], "que sonido hace el gato": ["¡Miau! 🐱"], "que sonido hace el perro": ["¡Guau! 🐶"], "area del circulo": ["A = π × radio²."], "area del rectangulo": ["Área = base × altura."], "teorema de pitagoras": ["En un triángulo rectángulo, a² + b² = c²."], "historia mundial": ["La historia se suele dividir en Prehistoria (antes de la escritura), Edad Antigua (hasta el 476), Edad Media (476–1453), Edad Moderna (1453–1789) y Edad Contemporánea (desde 1789). 📜 Pregúntame por cualquier época, personaje o guerra."], "cuentame historia": ["La historia se suele dividir en Prehistoria (antes de la escritura), Edad Antigua (hasta el 476), Edad Media (476–1453), Edad Moderna (1453–1789) y Edad Contemporánea (desde 1789). 📜 Pregúntame por cualquier época, personaje o guerra."], "dime algo de historia": ["La historia se suele dividir en Prehistoria (antes de la escritura), Edad Antigua (hasta el 476), Edad Media (476–1453), Edad Moderna (1453–1789) y Edad Contemporánea (desde 1789). 📜 Pregúntame por cualquier época, personaje o guerra."], "edad antigua": ["Va desde la invención de la escritura (~3300 a.C.) hasta la caída del Imperio romano de Occidente en el 476 d.C. 🏛️"], "edad media": ["Etapa entre la caída de Roma (476) y la toma de Constantinopla (1453), o el viaje de Colón (1492), según el historiador. Feudalismo, cruzadas e imperios islámicos y bizantino. ⚔️"], "edad moderna": ["Va de 1453 (o 1492) hasta la Revolución francesa (1789). Renacimiento, descubrimientos, Reforma protestante y monarquías absolutas. 🧭"], "edad contemporanea": ["Desde la Revolución francesa (1789) hasta hoy: revoluciones, industrialización, dos guerras mundiales y la era digital. 🌐"], "prehistoria": ["Etapa anterior a la escritura (hasta ~3300 a.C.). Incluye el Paleolítico (cazadores-recolectores) y el Neolítico (agricultura). 🦴"], "edad de piedra": ["Etapa anterior a la escritura (hasta ~3300 a.C.). Incluye el Paleolítico (cazadores-recolectores) y el Neolítico (agricultura). 🦴"], "homo sapiens": ["Nuestra especie apareció en África hace unos 300.000 años y luego se expandió por todo el planeta. 🌍"], "neolitico": ["Hacia el 10.000 a.C. nacieron la agricultura y la ganadería, y con ellas las aldeas y las primeras ciudades. 🌾"], "revolucion neolitica": ["Hacia el 10.000 a.C. nacieron la agricultura y la ganadería, y con ellas las aldeas y las primeras ciudades. 🌾"], "edad de bronce": ["Desde ~3300 a.C. en Oriente Próximo: se empezó a fabricar bronce (cobre + estaño) para herramientas y armas. 🛠️"], "mesopotamia": ["Región entre los ríos Tigris y Éufrates (hoy Irak). Allí surgieron las primeras ciudades y la escritura cuneiforme (~3300 a.C.). 🏺"], "sumerios": ["Región entre los ríos Tigris y Éufrates (hoy Irak). Allí surgieron las primeras ciudades y la escritura cuneiforme (~3300 a.C.). 🏺"], "antiguo egipto": ["Civilización junto al Nilo, unificada hacia el 3100 a.C. Faraones, pirámides y jeroglíficos. Terminó cuando Roma la conquistó en el 30 a.C. 🏜️"], "egipto antiguo": ["Civilización junto al Nilo, unificada hacia el 3100 a.C. Faraones, pirámides y jeroglíficos. Terminó cuando Roma la conquistó en el 30 a.C. 🏜️"], "faraones": ["Civilización junto al Nilo, unificada hacia el 3100 a.C. Faraones, pirámides y jeroglíficos. Terminó cuando Roma la conquistó en el 30 a.C. 🏜️"], "piramides de egipto": ["La Gran Pirámide de Giza se construyó para el faraón Keops hacia el 2560 a.C. y fue la estructura más alta del mundo durante milenios. 🔺"], "piramide de giza": ["La Gran Pirámide de Giza se construyó para el faraón Keops hacia el 2560 a.C. y fue la estructura más alta del mundo durante milenios. 🔺"], "gran piramide": ["La Gran Pirámide de Giza se construyó para el faraón Keops hacia el 2560 a.C. y fue la estructura más alta del mundo durante milenios. 🔺"], "cleopatra": ["Cleopatra VII fue la última reina activa del Egipto ptolemaico. Se alió con Julio César y Marco Antonio y murió en el 30 a.C. 👑"], "tutankamon": ["Faraón niño que reinó aprox. del 1332 al 1323 a.C. Su tumba casi intacta la halló Howard Carter en 1922. 🏺"], "antigua grecia": ["Civilización de ciudades-estado (polis) como Atenas y Esparta. Aportó la democracia, la filosofía, el teatro y los Juegos Olímpicos (776 a.C., fecha tradicional). 🏛️"], "grecia antigua": ["Civilización de ciudades-estado (polis) como Atenas y Esparta. Aportó la democracia, la filosofía, el teatro y los Juegos Olímpicos (776 a.C., fecha tradicional). 🏛️"], "democracia ateniense": ["Atenas inició su democracia con las reformas de Clístenes (~508 a.C.): los ciudadanos varones votaban directamente las leyes. 🗳️"], "juegos olimpicos antiguos": ["Se celebraban en Olimpia, Grecia, desde el 776 a.C. (fecha tradicional) en honor a Zeus. Los modernos renacieron en 1896. 🏅"], "alejandro magno": ["Rey de Macedonia (356–323 a.C.). Conquistó el Imperio persa y llegó hasta la India. Murió en Babilonia a los 32 años. ⚔️"], "socrates": ["Filósofo ateniense (470–399 a.C.). No escribió nada; fue condenado a muerte por la ciudad y bebió cicuta. 🧠"], "platon": ["Filósofo griego, discípulo de Sócrates y fundador de la Academia en Atenas. Autor de 'La República'. 📖"], "aristoteles": ["Filósofo griego, discípulo de Platón y maestro de Alejandro Magno. Estudió lógica, ética, política y biología. 🧠"], "guerras medicas": ["Conflicto entre Grecia y el Imperio persa (490–479 a.C.). Batallas famosas: Maratón (490 a.C.) y Salamina (480 a.C.). ⚔️"], "guerra del peloponeso": ["Guerra entre Atenas y Esparta (431–404 a.C.). Ganó Esparta, pero Grecia quedó muy debilitada. 🛡️"], "imperio persa": ["Lo fundó Ciro el Grande hacia el 550 a.C. Fue enorme y bien organizado, hasta que Alejandro Magno lo conquistó (~330 a.C.). 🏺"], "imperio romano": ["Roma fue república desde el 509 a.C. y pasó a imperio con Augusto (27 a.C.). El de Occidente cayó en el 476 d.C. y el de Oriente (Bizancio) duró hasta 1453. 🏛️"], "antigua roma": ["Roma fue república desde el 509 a.C. y pasó a imperio con Augusto (27 a.C.). El de Occidente cayó en el 476 d.C. y el de Oriente (Bizancio) duró hasta 1453. 🏛️"], "julio cesar": ["General y político romano (100–44 a.C.). Conquistó la Galia, cruzó el Rubicón en el 49 a.C. y fue asesinado el 15 de marzo del 44 a.C. 🗡️"], "augusto": ["Primer emperador romano (27 a.C.–14 d.C.). Inició la Pax Romana, un largo periodo de estabilidad. 👑"], "pax romana": ["Periodo de paz y prosperidad relativa en el Imperio romano que comenzó con Augusto y duró unos 200 años. 🕊️"], "caida del imperio romano": ["El Imperio romano de Occidente cayó en el 476 d.C., cuando Odoacro depuso al emperador Rómulo Augústulo. 🏛️"], "caida de roma": ["El Imperio romano de Occidente cayó en el 476 d.C., cuando Odoacro depuso al emperador Rómulo Augústulo. 🏛️"], "constantino": ["Emperador romano que legalizó el cristianismo (Edicto de Milán, 313) y fundó Constantinopla en el 330. ✝️"], "coliseo": ["El Anfiteatro Flavio de Roma, inaugurado en el 80 d.C. Tenía capacidad para decenas de miles de espectadores. 🏟️"], "imperio bizantino": ["Continuación del Imperio romano de Oriente, con capital en Constantinopla. Cayó el 29 de mayo de 1453 ante los otomanos. 🕌"], "constantinopla": ["Continuación del Imperio romano de Oriente, con capital en Constantinopla. Cayó el 29 de mayo de 1453 ante los otomanos. 🕌"], "antigua china": ["Civilización con dinastías como Shang y Zhou. Qin Shi Huang unificó el país en el 221 a.C. y fundó el primer imperio. 🐉"], "china antigua": ["Civilización con dinastías como Shang y Zhou. Qin Shi Huang unificó el país en el 221 a.C. y fundó el primer imperio. 🐉"], "gran muralla china": ["Se construyó por tramos desde hace más de 2.000 años. Los tramos más conocidos son de la dinastía Ming (siglos XIV–XVII). 🧱"], "muralla china": ["Se construyó por tramos desde hace más de 2.000 años. Los tramos más conocidos son de la dinastía Ming (siglos XIV–XVII). 🧱"], "ruta de la seda": ["Red de rutas comerciales entre China y el Mediterráneo, activa desde la dinastía Han (~130 a.C.). Llevaba seda, especias e ideas. 🐪"], "imperio mongol": ["Fundado por Gengis Kan en 1206, llegó a ser el mayor imperio terrestre continuo de la historia. 🐎"], "gengis kan": ["Unificó a las tribus mongolas, fundó el Imperio mongol en 1206 y murió en 1227. 🐎"], "marco polo": ["Mercader veneciano (1254–1324) que viajó a China y la dio a conocer en Europa con 'El libro de las maravillas'. 🧭"], "imperio otomano": ["Fundado hacia 1299 por Osmán I. Conquistó Constantinopla en 1453 y se disolvió tras la Primera Guerra Mundial (1922). 🕌"], "vikingos": ["Navegantes escandinavos de los siglos VIII al XI. Saquearon y comerciaron por Europa, y Leif Erikson llegó a Norteamérica hacia el año 1000. ⛵"], "feudalismo": ["Sistema medieval en el que el rey cedía tierras a nobles a cambio de lealtad, y los campesinos trabajaban esas tierras. 🏰"], "cruzadas": ["Expediciones militares cristianas a Tierra Santa entre 1096 y 1291, impulsadas por el papado. ⚔️"], "peste negra": ["Epidemia que azotó Europa entre 1347 y 1351 y mató, según las estimaciones, a cerca de un tercio o más de la población. 🐀"], "carlomagno": ["Rey de los francos coronado emperador el año 800. Unificó gran parte de Europa occidental. 👑"], "guerra de los cien anos": ["Conflicto entre Inglaterra y Francia que duró de 1337 a 1453, es decir, 116 años. ⚔️"], "juana de arco": ["Joven francesa (1412–1431) que lideró tropas en la Guerra de los Cien Años. Fue quemada en Ruan y luego declarada santa. 🔥"], "mahoma": ["Mahoma (~570–632) fundó el islam en La Meca. En el 622 emigró a Medina (la Hégira), año 1 del calendario islámico. ☪️"], "origen del islam": ["Mahoma (~570–632) fundó el islam en La Meca. En el 622 emigró a Medina (la Hégira), año 1 del calendario islámico. ☪️"], "mayas": ["Civilización mesoamericana con su época clásica entre ~250 y 900 d.C. Destacaron en astronomía, calendario y escritura. Ciudades: Tikal y Chichén Itzá. 🌿"], "aztecas": ["Fundaron Tenochtitlan en 1325 y dominaron el centro de México hasta que Hernán Cortés y sus aliados la tomaron en 1521. 🦅"], "mexicas": ["Fundaron Tenochtitlan en 1325 y dominaron el centro de México hasta que Hernán Cortés y sus aliados la tomaron en 1521. 🦅"], "incas": ["Imperio andino del Tahuantinsuyo, con capital en Cusco y apogeo en el siglo XV. Cayó ante Francisco Pizarro entre 1532 y 1533. ⛰️"], "machu picchu": ["Ciudadela inca del siglo XV, en los Andes de Perú. Es Patrimonio Mundial de la UNESCO. 🏔️"], "hernan cortes": ["Conquistador español que, con aliados indígenas, derrotó al Imperio azteca en 1521. ⚔️"], "francisco pizarro": ["Conquistador español que capturó al inca Atahualpa en Cajamarca (1532) y conquistó el Imperio inca. ⚔️"], "pizarro": ["Conquistador español que capturó al inca Atahualpa en Cajamarca (1532) y conquistó el Imperio inca. ⚔️"], "conquista de america": ["Desde 1492 los europeos, sobre todo españoles y portugueses, colonizaron el continente. Hubo guerras, enfermedades y mestizaje que cambiaron para siempre a los pueblos originarios. 🌎"], "cristobal colon": ["Navegante genovés que, al servicio de los Reyes Católicos, llegó a América el 12 de octubre de 1492. ⛵"], "magallanes": ["Fernando de Magallanes lideró la expedición que zarpó en 1519 y dio la primera vuelta al mundo (1519–1522). Murió en Filipinas y la terminó Juan Sebastián Elcano. 🌐"], "elcano": ["Juan Sebastián Elcano completó en 1522 la primera circunnavegación de la Tierra tras la muerte de Magallanes. ⛵"], "renacimiento": ["Movimiento cultural de los siglos XIV al XVI, nacido en Italia. Puso al ser humano en el centro: Leonardo, Miguel Ángel y Rafael. 🎨"], "leonardo da vinci": ["Genio italiano del Renacimiento (1452–1519): pintor de la Mona Lisa, inventor y científico. 🎨"], "miguel angel": ["Artista renacentista (1475–1564). Esculpió el David y pintó el techo de la Capilla Sixtina. 🗿"], "imprenta": ["Johannes Gutenberg desarrolló la imprenta de tipos móviles hacia 1450 en Maguncia, y difundió el conocimiento por Europa. 📖"], "gutenberg": ["Johannes Gutenberg desarrolló la imprenta de tipos móviles hacia 1450 en Maguncia, y difundió el conocimiento por Europa. 📖"], "reforma protestante": ["Comenzó en 1517, cuando Martín Lutero publicó sus 95 tesis. Dividió el cristianismo occidental entre católicos y protestantes. ✝️"], "martin lutero": ["Monje alemán (1483–1546) cuya crítica a la Iglesia dio origen a la Reforma protestante. 📜"], "lutero": ["Monje alemán (1483–1546) cuya crítica a la Iglesia dio origen a la Reforma protestante. 📜"], "revolucion cientifica": ["Entre los siglos XVI y XVII, con Copérnico, Galileo y Newton, la ciencia empezó a basarse en la observación y las matemáticas. 🔭"], "galileo galilei": ["Astrónomo italiano (1564–1642). Mejoró el telescopio y defendió que la Tierra gira alrededor del Sol. Fue juzgado por la Inquisición en 1633. 🔭"], "galileo": ["Astrónomo italiano (1564–1642). Mejoró el telescopio y defendió que la Tierra gira alrededor del Sol. Fue juzgado por la Inquisición en 1633. 🔭"], "isaac newton": ["Científico inglés (1643–1727) que formuló la ley de la gravitación universal y las leyes del movimiento. 🍎"], "newton": ["Científico inglés (1643–1727) que formuló la ley de la gravitación universal y las leyes del movimiento. 🍎"], "ilustracion": ["Movimiento del siglo XVIII que defendía la razón, la ciencia y la libertad. Voltaire, Rousseau y Montesquieu. 💡"], "revolucion industrial": ["Comenzó en Gran Bretaña hacia 1760. La máquina de vapor y las fábricas cambiaron la economía y la sociedad. 🏭"], "independencia de estados unidos": ["Las Trece Colonias declararon su independencia de Gran Bretaña el 4 de julio de 1776. La guerra terminó en 1783. 🇺🇸"], "independencia de eeuu": ["Las Trece Colonias declararon su independencia de Gran Bretaña el 4 de julio de 1776. La guerra terminó en 1783. 🇺🇸"], "revolucion francesa": ["Empezó en 1789 con la toma de la Bastilla (14 de julio). Acabó con la monarquía absoluta y proclamó la libertad, igualdad y fraternidad. Terminó en 1799 con el ascenso de Napoleón. 🇫🇷"], "napoleon": ["Militar francés (1769–1821), emperador desde 1804. Fue derrotado en Waterloo (1815) y murió exiliado en Santa Elena. 👑"], "napoleon bonaparte": ["Militar francés (1769–1821), emperador desde 1804. Fue derrotado en Waterloo (1815) y murió exiliado en Santa Elena. 👑"], "batalla de waterloo": ["El 18 de junio de 1815, Napoleón fue derrotado por británicos y prusianos. Fue el fin de su dominio. ⚔️"], "waterloo": ["El 18 de junio de 1815, Napoleón fue derrotado por británicos y prusianos. Fue el fin de su dominio. ⚔️"], "independencia de mexico": ["El Grito de Dolores de Miguel Hidalgo fue el 16 de septiembre de 1810. La independencia se consumó el 27 de septiembre de 1821. 🇲🇽"], "simon bolivar": ["Libertador (1783–1830) de Venezuela, Colombia, Ecuador, Perú y Bolivia. 🗽"], "bolivar": ["Libertador (1783–1830) de Venezuela, Colombia, Ecuador, Perú y Bolivia. 🗽"], "san martin": ["General argentino (1778–1850) que lideró la independencia de Argentina, Chile y Perú. 🇦🇷"], "jose de san martin": ["General argentino (1778–1850) que lideró la independencia de Argentina, Chile y Perú. 🇦🇷"], "independencia de america latina": ["Entre 1808 y 1826 casi toda la América española se independizó, impulsada por líderes como Bolívar y San Martín. 🌎"], "independencias latinoamericanas": ["Entre 1808 y 1826 casi toda la América española se independizó, impulsada por líderes como Bolívar y San Martín. 🌎"], "abraham lincoln": ["16.º presidente de EE. UU. Lideró al país en la Guerra Civil, impulsó la abolición de la esclavitud y fue asesinado en 1865. 🇺🇸"], "lincoln": ["16.º presidente de EE. UU. Lideró al país en la Guerra Civil, impulsó la abolición de la esclavitud y fue asesinado en 1865. 🇺🇸"], "guerra de secesion": ["Guerra entre el Norte y el Sur de EE. UU. (1861–1865). Ganó el Norte y se abolió la esclavitud. 🇺🇸"], "guerra civil de estados unidos": ["Guerra entre el Norte y el Sur de EE. UU. (1861–1865). Ganó el Norte y se abolió la esclavitud. 🇺🇸"], "unificacion de alemania": ["Bajo Otto von Bismarck, Alemania se unificó como imperio en 1871. 🇩🇪"], "unificacion de italia": ["Proceso que culminó con el Reino de Italia en 1861, con figuras como Garibaldi y Cavour. 🇮🇹"], "conferencia de berlin": ["En 1884–1885 las potencias europeas se repartieron África sin consultar a los pueblos africanos. 🌍"], "revolucion mexicana": ["Comenzó en 1910 contra Porfirio Díaz. Participaron Madero, Villa y Zapata. Se promulgó la Constitución de 1917. 🇲🇽"], "pancho villa": ["Líder militar de la Revolución mexicana, al mando de la División del Norte. 🐎"], "francisco villa": ["Líder militar de la Revolución mexicana, al mando de la División del Norte. 🐎"], "emiliano zapata": ["Líder campesino de la Revolución mexicana en el sur, con el lema «Tierra y Libertad». 🌽"], "zapata": ["Líder campesino de la Revolución mexicana en el sur, con el lema «Tierra y Libertad». 🌽"], "primera guerra mundial": ["Duró de 1914 a 1918. Se desató tras el asesinato del archiduque Francisco Fernando en Sarajevo. Terminó con el armisticio del 11 de noviembre de 1918 y el Tratado de Versalles (1919). ⚔️"], "1ra guerra mundial": ["Duró de 1914 a 1918. Se desató tras el asesinato del archiduque Francisco Fernando en Sarajevo. Terminó con el armisticio del 11 de noviembre de 1918 y el Tratado de Versalles (1919). ⚔️"], "tratado de versalles": ["Firmado en 1919, puso fin oficial a la Primera Guerra Mundial e impuso duras condiciones a Alemania. 📜"], "revolucion rusa": ["En 1917 cayó el zar y los bolcheviques, liderados por Lenin, tomaron el poder. En 1922 nació la URSS. 🇷🇺"], "lenin": ["Líder de los bolcheviques (1870–1924) y primer jefe del gobierno soviético. 🇷🇺"], "stalin": ["Dirigió la Unión Soviética desde mediados de los años 20 hasta su muerte en 1953. Su régimen fue una dictadura con millones de víctimas. 🇷🇺"], "gran depresion": ["Crisis económica mundial que estalló con el desplome de la bolsa de Nueva York en octubre de 1929. 📉"], "crisis de 1929": ["Crisis económica mundial que estalló con el desplome de la bolsa de Nueva York en octubre de 1929. 📉"], "guerra civil espanola": ["Conflicto entre republicanos y sublevados (1936–1939). Ganó el bando de Francisco Franco. 🇪🇸"], "franco": ["Francisco Franco gobernó España como dictador desde 1939 hasta su muerte en 1975. 🇪🇸"], "dictadura de franco": ["Francisco Franco gobernó España como dictador desde 1939 hasta su muerte en 1975. 🇪🇸"], "adolf hitler": ["Líder del partido nazi, canciller de Alemania desde 1933 y responsable del Holocausto y de la Segunda Guerra Mundial. Se suicidó en abril de 1945. 🇩🇪"], "hitler": ["Líder del partido nazi, canciller de Alemania desde 1933 y responsable del Holocausto y de la Segunda Guerra Mundial. Se suicidó en abril de 1945. 🇩🇪"], "holocausto": ["Genocidio perpetrado por la Alemania nazi entre 1941 y 1945: asesinó a unos seis millones de judíos y a muchas otras víctimas. 🕯️"], "segunda guerra mundial": ["Comenzó el 1 de septiembre de 1939 con la invasión alemana de Polonia. Terminó en 1945 (Europa el 8 de mayo; Japón el 2 de septiembre). Enfrentó a los Aliados con el Eje y dejó decenas de millones de muertos. 🌍"], "2da guerra mundial": ["Comenzó el 1 de septiembre de 1939 con la invasión alemana de Polonia. Terminó en 1945 (Europa el 8 de mayo; Japón el 2 de septiembre). Enfrentó a los Aliados con el Eje y dejó decenas de millones de muertos. 🌍"], "pearl harbor": ["El 7 de diciembre de 1941 Japón atacó la base estadounidense de Pearl Harbor, y EE. UU. entró en la guerra. ✈️"], "dia d": ["El 6 de junio de 1944 los Aliados desembarcaron en las playas de Normandía para liberar Europa occidental. 🪖"], "desembarco de normandia": ["El 6 de junio de 1944 los Aliados desembarcaron en las playas de Normandía para liberar Europa occidental. 🪖"], "hiroshima": ["EE. UU. lanzó bombas atómicas sobre Hiroshima (6 de agosto de 1945) y Nagasaki (9 de agosto de 1945). ☢️"], "bomba atomica": ["EE. UU. lanzó bombas atómicas sobre Hiroshima (6 de agosto de 1945) y Nagasaki (9 de agosto de 1945). ☢️"], "onu": ["La ONU se fundó en 1945, al terminar la Segunda Guerra Mundial, para mantener la paz y la cooperación entre países. 🇺🇳"], "naciones unidas": ["La ONU se fundó en 1945, al terminar la Segunda Guerra Mundial, para mantener la paz y la cooperación entre países. 🇺🇳"], "guerra fria": ["Rivalidad entre EE. UU. y la URSS desde 1947 hasta 1991, sin combate directo entre ambos pero con guerras indirectas y carrera armamentista. 🧊"], "muro de berlin": ["Se levantó en agosto de 1961 para dividir Berlín y cayó el 9 de noviembre de 1989. 🧱"], "crisis de los misiles": ["En octubre de 1962 EE. UU. y la URSS estuvieron al borde de una guerra nuclear por misiles soviéticos en Cuba. 🚀"], "revolucion cubana": ["Triunfó en 1959 con Fidel Castro y derrocó al dictador Fulgencio Batista. 🇨🇺"], "guerra de vietnam": ["Conflicto en Vietnam entre el Norte comunista y el Sur apoyado por EE. UU. Terminó en 1975 con la reunificación bajo el Norte. 🇻🇳"], "guerra de corea": ["Se libró entre 1950 y 1953. Dividió la península en Corea del Norte y Corea del Sur. 🇰🇷"], "revolucion china": ["En 1949 Mao Zedong proclamó la República Popular China tras la victoria comunista en la guerra civil. 🇨🇳"], "mao zedong": ["En 1949 Mao Zedong proclamó la República Popular China tras la victoria comunista en la guerra civil. 🇨🇳"], "mao": ["En 1949 Mao Zedong proclamó la República Popular China tras la victoria comunista en la guerra civil. 🇨🇳"], "caida de la urss": ["La Unión Soviética se disolvió el 26 de diciembre de 1991, y quedaron 15 repúblicas independientes. 🇷🇺"], "disolucion de la urss": ["La Unión Soviética se disolvió el 26 de diciembre de 1991, y quedaron 15 repúblicas independientes. 🇷🇺"], "llegada a la luna": ["El 20 de julio de 1969, la misión Apolo 11 llevó a Neil Armstrong y Buzz Aldrin a la Luna. 🌕"], "apolo 11": ["El 20 de julio de 1969, la misión Apolo 11 llevó a Neil Armstrong y Buzz Aldrin a la Luna. 🌕"], "carrera espacial": ["Rivalidad entre EE. UU. y la URSS: Sputnik (1957), Yuri Gagarin primer humano en el espacio (1961), y la Luna (1969). 🚀"], "gandhi": ["Líder indio (1869–1948) que impulsó la independencia mediante la no violencia. Fue asesinado en 1948. 🕊️"], "mahatma gandhi": ["Líder indio (1869–1948) que impulsó la independencia mediante la no violencia. Fue asesinado en 1948. 🕊️"], "independencia de la india": ["La India se independizó del Reino Unido el 15 de agosto de 1947, y nació también Pakistán. 🇮🇳"], "nelson mandela": ["Activista (1918–2013) preso 27 años por luchar contra el apartheid. Fue presidente de Sudáfrica de 1994 a 1999. ✊"], "mandela": ["Activista (1918–2013) preso 27 años por luchar contra el apartheid. Fue presidente de Sudáfrica de 1994 a 1999. ✊"], "apartheid": ["Régimen de segregación racial en Sudáfrica (1948–1994). Terminó con las primeras elecciones multirraciales. ✊"], "martin luther king": ["Líder del movimiento por los derechos civiles en EE. UU. Pronunció «Tengo un sueño» en 1963 y fue asesinado en 1968. ✊"], "descolonizacion": ["Proceso posterior a 1945 en el que numerosos países de África y Asia se independizaron de las potencias europeas. 🌍"], "union europea": ["Nació del Tratado de Maastricht (1992, vigente desde 1993). El euro empezó a circular en 2002. 🇪🇺"], "11 de septiembre": ["El 11 de septiembre de 2001 hubo ataques terroristas en Nueva York y Washington que causaron cerca de 3.000 muertes. 🕯️"], "atentados del 11 de septiembre": ["El 11 de septiembre de 2001 hubo ataques terroristas en Nueva York y Washington que causaron cerca de 3.000 muertes. 🕯️"], "dato historico": ["Cleopatra vivió más cerca en el tiempo del alunizaje que de la construcción de la Gran Pirámide. 🔺", "La Universidad de Oxford ya enseñaba antes de que existiera el Imperio azteca. 🎓", "La Guerra de los Cien Años duró 116 años. ⏳", "Napoleón medía alrededor de 1,68 m, algo normal para su época. 📏", "La Gran Muralla china no se distingue a simple vista desde el espacio, aunque mucha gente lo cree. 🧱"], "curiosidad historica": ["Cleopatra vivió más cerca en el tiempo del alunizaje que de la construcción de la Gran Pirámide. 🔺", "La Universidad de Oxford ya enseñaba antes de que existiera el Imperio azteca. 🎓", "La Guerra de los Cien Años duró 116 años. ⏳", "Napoleón medía alrededor de 1,68 m, algo normal para su época. 📏", "La Gran Muralla china no se distingue a simple vista desde el espacio, aunque mucha gente lo cree. 🧱"], "dato de historia": ["Cleopatra vivió más cerca en el tiempo del alunizaje que de la construcción de la Gran Pirámide. 🔺", "La Universidad de Oxford ya enseñaba antes de que existiera el Imperio azteca. 🎓", "La Guerra de los Cien Años duró 116 años. ⏳", "Napoleón medía alrededor de 1,68 m, algo normal para su época. 📏", "La Gran Muralla china no se distingue a simple vista desde el espacio, aunque mucha gente lo cree. 🧱"], "1453": ["En 1453 los otomanos tomaron Constantinopla y cayó el Imperio bizantino. Muchos historiadores marcan ahí el fin de la Edad Media. 🕌"], "1492": ["En 1492 Colón llegó a América (12 de octubre) y los Reyes Católicos tomaron Granada, el último reino musulmán de la península ibérica. ⛵"], "1776": ["En 1776 las Trece Colonias declararon su independencia de Gran Bretaña (4 de julio). 🇺🇸"], "1789": ["En 1789 estalló la Revolución francesa con la toma de la Bastilla. 🇫🇷"], "1810": ["En 1810 comenzaron procesos de independencia en varios países de América, como el Grito de Dolores en México. 🌎"], "1914": ["En 1914 comenzó la Primera Guerra Mundial tras el asesinato del archiduque Francisco Fernando en Sarajevo. ⚔️"], "1917": ["En 1917 ocurrió la Revolución rusa, con la caída del zar y el ascenso de los bolcheviques. 🇷🇺"], "1939": ["En 1939 comenzó la Segunda Guerra Mundial, con la invasión alemana de Polonia. 🌍"], "1945": ["En 1945 terminó la Segunda Guerra Mundial y se fundó la ONU. Ese año también cayeron las bombas atómicas sobre Hiroshima y Nagasaki. 🕊️"], "1969": ["En 1969 el Apolo 11 llevó a los primeros humanos a la Luna (20 de julio). 🌕"], "1989": ["En 1989 cayó el Muro de Berlín (9 de noviembre), símbolo del fin de la Guerra Fría. 🧱"], "1991": ["En 1991 se disolvió la Unión Soviética, y terminó la Guerra Fría. 🇷🇺"], "capital de españa": ["Madrid 🇪🇸"], "capital de paraguay": ["Asunción 🇵🇾"], "cuando fue la independencia de argentina": ["El 9 de julio de 1816 se declaró la Independencia en el Congreso de Tucumán."], "quien fue san martin": ["José de San Martín fue un militar y prócer argentino, clave en la independencia de Argentina, Chile y Perú."], "quien fue bolivar": ["Simón Bolívar, el Libertador, lideró la independencia de varios países de Sudamérica."], "que es el big bang": ["Es la teoría más aceptada sobre el origen del universo: hace unos 13.800 millones de años todo empezó a expandirse desde un estado extremadamente denso y caliente."], "cuanto tarda la tierra en dar la vuelta al sol": ["Aproximadamente 365 días y 6 horas (por eso cada 4 años hay año bisiesto)."], "quien pinto la ultima cena": ["Leonardo da Vinci."], "que es la inteligencia artificial": ["Es la capacidad de las máquinas de realizar tareas que normalmente requieren inteligencia humana: aprender, razonar, reconocer patrones, etc."], "diferencia entre ia y robot": ["La IA es el 'cerebro' (software que piensa/aprende). Un robot es el cuerpo físico. Pueden ir juntos o por separado."], "que es javascript": ["JavaScript es el lenguaje que hace interactiva la web. Corre en el navegador y también en servidores (Node.js)."], "que es css": ["CSS es el lenguaje que define cómo se ve una página web: colores, tamaños, posiciones, animaciones, etc."], "que es una variable": ["En programación, una variable es un espacio con nombre donde guardás un valor que puede cambiar."], "que es github": ["Es una plataforma para alojar código y trabajar en equipo usando control de versiones con Git."], "que es la nube": ["Se refiere a servidores remotos a los que accedés por internet para guardar archivos, correr programas o usar servicios."], "que es 5g": ["Es la quinta generación de redes móviles: más velocidad, menos latencia y capacidad para conectar muchos dispositivos."], "cuanta agua hay que tomar": ["Una referencia común es alrededor de 2 litros al día, pero depende de tu peso, clima, actividad y salud. Escuchá a tu cuerpo."], "cuantas horas hay que dormir": ["La mayoría de adultos necesitan entre 7 y 9 horas. Los adolescentes suelen necesitar un poco más."], "como bajar el estres": ["Respirar profundo, mover el cuerpo, dormir bien, hablar con alguien de confianza, reducir pantallas antes de dormir y hacer pausas ayudan mucho."], "que es la ansiedad": ["Es una respuesta natural del cuerpo ante el peligro o la incertidumbre. Cuando es muy intensa o frecuente puede interferir con la vida diaria; en esos casos conviene hablar con un profesional."], "para que sirve el ejercicio": ["Mejora el estado de ánimo, el sueño, la fuerza, la salud del corazón y ayuda a manejar el estrés."], "como cocinar arroz": ["Enjuagá el arroz, poné 1 parte de arroz por 2 de agua, herví, bajá el fuego, tapá y cociná unos 15-18 minutos hasta que absorba el agua. Dejá reposar 5 minutos."], "como hacer un huevo frito": ["Calentá un poco de aceite o manteca en sartén, rompé el huevo con cuidado, cociná a fuego medio hasta que la clara esté cuajada. Salpimentá."], "receta de mate": ["Calentá agua a unos 70-80°C (no hirviendo). Llená el mate con yerba hasta 3/4, incliná, echá un poco de agua tibia en un costado, esperá que se hinche y después cebá."], "como lavar la ropa blanca": ["Separá colores, usá detergente adecuado, preferí agua fría o tibia para cuidar las prendas y el color. No sobrecargues el lavarropas."], "como quitar una mancha de grasa": ["Absorbé el exceso, aplicá detergente o jabón líquido, dejá actuar y lavá. El bicarbonato o el alcohol a veces ayudan según la tela."], "como organizar el tiempo": ["Anotá lo importante, priorizá 2-3 cosas clave del día, usá bloques de tiempo y dejá márgenes para imprevistos."], "consejos para estudiar": ["Dividí en sesiones cortas, practicá recordar sin mirar, repasa en días distintos, dormí bien y explicá el tema con tus palabras."], "cuéntame un chiste": ["¿Por qué los pájaros no usan Facebook? Porque ya tienen Twitter 🐦😂"], "otro chiste": ["¿Cuál es el colmo de un electricista? No encontrar su corriente de trabajo ⚡"], "chiste malo": ["¿Qué hace un pez en el gimnasio? Nada de pesas 🐠"], "dato curioso": ["Los pulpos tienen tres corazones y su sangre es de color azul."], "otro dato curioso": ["La miel nunca se echa a perder. Se han encontrado tarros de hace miles de años todavía comestibles."], "dato random": ["Los tiburones existen desde antes que los árboles."], "estoy feliz": ["¡Qué bueno! 🎉 Contame qué te tiene así de bien."], "me siento solo": ["No estás del todo solo, acá estoy para charlar. También está bueno buscar a alguien de confianza en la vida real."], "tengo miedo": ["El miedo es normal. Respirá profundo un momento. Si es algo concreto, contame y vemos qué se puede hacer."], "no se que hacer": ["Podemos empezar por algo chiquito: un chiste, un dato, practicar un cálculo o que me enseñes algo nuevo con /aprender."], "como funcionas": ["Soy una app local. Tengo una base de respuestas, puedo calcular, aprender lo que me enseñes y guardarlo en tu celular. No necesito internet una vez instalada."], "eres offline": ["Sí. Una vez instalada como app, funciona sin conexión. Todo lo que aprendés se guarda en tu dispositivo."], "donde se guarda lo aprendido": ["En el almacenamiento local del navegador de este celular. Si borrás los datos del sitio o desinstalás, se puede perder. Por eso existe /exportar."], "como hago backup": ["Escribí /exportar y te descarga un archivo JSON con todo lo aprendido y tu nombre."], "version": ["ATLAS IA v2 — local, offline y con más conocimiento."], "que hay de nuevo": ["Tema claro/oscuro, indicador de escribiendo, /exportar, mejor offline y mucho más conocimiento general."], "quien gano el mundial 2026": ["El Mundial 2026 se juega en EE.UU., México y Canadá. Todavía no se jugó (o no terminó), así que todavía no hay campeón ⚽. Cuando termine, enseñame el resultado con /aprender."], "mundial 2026": ["El Mundial de la FIFA 2026 se disputa en Estados Unidos, México y Canadá. Es el primero con 48 selecciones."], "quien gano el mundial": ["El último campeón del mundo es Argentina (Qatar 2022). El próximo es el 2026 en Norteamérica."], "pelicula mas taquillera": ["A nivel mundial, Avatar (2009) y sus secuelas suelen liderar las listas de recaudación. Las cifras cambian con el tiempo y las reestrenos."], "tabla periodica": ["La tabla periódica organiza los elementos químicos por número atómico. La ideó Dmitri Mendeléyev. Si querés un elemento en concreto, preguntame (ej: qué es el oxígeno)."], "que es la tabla periodica": ["Es la organización de todos los elementos químicos conocidos según su número atómico y propiedades. La propuso Mendeléyev."], "messi": ["Lionel Messi es un futbolista argentino, considerado uno de los mejores de la historia. Ganó el Mundial 2022 con Argentina y múltiples Balones de Oro."], "quien es messi": ["Lionel Messi, astro del fútbol argentino, campeón del mundo 2022 y múltiples veces Balón de Oro."], "cristiano ronaldo": ["Cristiano Ronaldo es un futbolista portugués, uno de los máximos goleadores de la historia y estrella de clubes como Manchester United, Real Madrid y Al-Nassr."], "maradona": ["Diego Armando Maradona, leyenda del fútbol argentino. Campeón del mundo en 1986 y ídolo de millones."]};
+// Conocimientos extra ampliados para ATLAS IA (funcionan sin internet)
+const EXTRA = {"que es la energia": ["La energía es la capacidad de producir cambios o realizar trabajo. Puede ser cinética, potencial, térmica, química, eléctrica, nuclear o luminosa."], "energia cinetica": ["Es la energía que tiene un objeto por estar en movimiento. Depende de su masa y de su velocidad."], "energia potencial": ["Es energía almacenada por la posición o configuración de un objeto, como una piedra situada en lo alto."], "ley de la gravedad": ["La gravitación hace que los cuerpos con masa se atraigan. La teoría de la relatividad describe la gravedad como curvatura del espacio-tiempo."], "leyes de newton": ["Las tres leyes de Newton describen la inercia, la relación entre fuerza, masa y aceleración (F = m·a), y que toda acción tiene una reacción igual y opuesta."], "que es la electricidad": ["Es el conjunto de fenómenos asociados a la presencia y movimiento de cargas eléctricas."], "que es un circuito electrico": ["Es un camino cerrado por el que puede circular corriente eléctrica. Suele incluir una fuente, conductores y componentes."], "que es la corriente electrica": ["Es el flujo de carga eléctrica por un material. Se mide en amperios."], "que es el voltaje": ["Es la diferencia de potencial eléctrico entre dos puntos. Se mide en voltios."], "que es la resistencia electrica": ["Es la oposición al paso de corriente eléctrica. Se mide en ohmios."], "que es el sonido": ["Es una onda mecánica producida por vibraciones que necesita un medio material para propagarse."], "que es la luz": ["Es radiación electromagnética visible para el ojo humano; en el vacío viaja a unos 299.792 km/s."], "que es la temperatura": ["Es una medida relacionada con la energía cinética promedio de las partículas de una sustancia."], "estados de la materia": ["Los estados más conocidos son sólido, líquido, gas y plasma. También existen otros estados en condiciones especiales."], "que es el plasma": ["Es un gas ionizado con partículas cargadas; aparece en estrellas, relámpagos y algunas lámparas."], "que es una celula": ["La célula es la unidad básica estructural y funcional de los seres vivos."], "celula procariota": ["Es una célula sin núcleo rodeado por membrana; las bacterias y arqueas son procariotas."], "celula eucariota": ["Es una célula con núcleo y orgánulos membranosos; animales, plantas, hongos y protistas tienen células eucariotas."], "que es el nucleo celular": ["Es el orgánulo que contiene la mayor parte del ADN en las células eucariotas y ayuda a regular sus actividades."], "que son las mitocondrias": ["Son orgánulos que producen gran parte de la energía utilizable de las células mediante respiración celular."], "que son los ribosomas": ["Son estructuras celulares que fabrican proteínas a partir de instrucciones del ARN."], "que es la evolucion": ["En biología, la evolución es el cambio de características heredables de poblaciones a través de generaciones."], "seleccion natural": ["Es un proceso evolutivo por el que rasgos heredables que favorecen la reproducción tienden a volverse más comunes."], "cadena alimentaria": ["Representa quién se alimenta de quién en un ecosistema: productores, consumidores y descomponedores."], "que es un ecosistema": ["Es el conjunto de los seres vivos de un lugar y los elementos no vivos con los que interactúan."], "que es el cambio climatico": ["Es el cambio duradero del clima. El calentamiento actual se debe principalmente a gases de efecto invernadero emitidos por actividades humanas."], "que es el efecto invernadero": ["Es un proceso natural por el que ciertos gases retienen parte del calor; el aumento humano de esos gases intensifica el calentamiento."], "ciclo del agua": ["El agua circula por evaporación, condensación, precipitación, infiltración y escorrentía, entre otros procesos."], "que es la biodiversidad": ["Es la variedad de vida: diversidad genética, de especies y de ecosistemas."], "que es un virus": ["Es un agente infeccioso que necesita células de un huésped para multiplicarse. No se considera una célula."], "que son las bacterias": ["Son microorganismos unicelulares procariotas. Muchas son útiles; algunas pueden causar enfermedades."], "que es una vacuna": ["Es una preparación que entrena al sistema inmunitario para reconocer un patógeno o una parte de él."], "que es el sistema inmunitario": ["Es la red de células, tejidos y órganos que ayuda al cuerpo a defenderse de infecciones y otras amenazas."], "que es la fotosintesis explicacion": ["En la fotosíntesis, plantas, algas y algunas bacterias convierten energía luminosa en energía química; las plantas usan agua y dióxido de carbono y liberan oxígeno."], "que es la respiracion celular": ["Es el proceso por el que las células obtienen energía utilizable de moléculas como la glucosa."], "que es el sistema solar": ["Es el Sol y todos los cuerpos ligados gravitacionalmente a él, incluidos ocho planetas, planetas enanos, lunas, asteroides y cometas."], "que es una galaxia": ["Es un enorme sistema de estrellas, gas, polvo, materia oscura y otros objetos unidos por gravedad."], "via lactea": ["La Vía Láctea es la galaxia donde se encuentra el sistema solar."], "que es una supernova": ["Es una explosión estelar muy energética que puede ocurrir al final de la vida de ciertas estrellas."], "que es un exoplaneta": ["Es un planeta que orbita una estrella distinta del Sol o que viaja por el espacio sin estar ligado a una estrella."], "que es un año luz": ["Es una unidad de distancia: lo que recorre la luz en un año, aproximadamente 9,46 billones de kilómetros."], "que es la tectonica de placas": ["La litosfera terrestre está dividida en placas que se mueven lentamente; sus interacciones producen terremotos, volcanes y montañas."], "capas de la tierra": ["Las capas principales son corteza, manto y núcleo; el núcleo se divide en externo líquido e interno sólido."], "que es la erosion": ["Es el desgaste y transporte de suelo o roca por agua, viento, hielo y otros agentes."], "que es un fosil": ["Es un resto, impresión o evidencia de un organismo antiguo conservado de forma natural."], "que es la prehistoria": ["Es el período anterior a la aparición de registros escritos en una sociedad; su duración varía según la región."], "revolucion industrial": ["Fue una transformación económica y social iniciada en Gran Bretaña en el siglo XVIII, impulsada por máquinas, fábricas y nuevas fuentes de energía."], "revolucion francesa": ["Comenzó en 1789 y transformó la monarquía y la sociedad francesas; difundió ideas de ciudadanía, igualdad jurídica y soberanía popular."], "primera guerra mundial": ["Se desarrolló entre 1914 y 1918 e involucró a potencias y territorios de varios continentes. Terminó con armisticios y tratados posteriores."], "segunda guerra mundial": ["Se desarrolló entre 1939 y 1945. Fue un conflicto global con el Eje y los Aliados, el Holocausto y el uso de armas nucleares al final de la guerra."], "independencia argentina": ["La declaración de independencia de las Provincias Unidas en Sud América ocurrió el 9 de julio de 1816 en el Congreso de Tucumán."], "revolucion de mayo": ["La Revolución de Mayo ocurrió en Buenos Aires en mayo de 1810 y dio lugar a la formación de una junta de gobierno local."], "san martin": ["José de San Martín fue un militar y líder de las independencias sudamericanas; participó en campañas de Argentina, Chile y Perú."], "belgrano": ["Manuel Belgrano fue abogado, militar y político rioplatense, y es reconocido por crear la bandera argentina."], "democracia": ["Es una forma de organización política en la que el poder se fundamenta en la ciudadanía, mediante elecciones y otras formas de participación, con derechos e instituciones."], "constitucion": ["Una constitución es la norma fundamental que organiza el Estado, define poderes y reconoce derechos y garantías."], "derechos humanos": ["Son derechos inherentes a todas las personas, sin distinción. Incluyen derechos civiles, políticos, económicos, sociales y culturales."], "que es la economia": ["La economía estudia cómo personas y sociedades producen, distribuyen y consumen bienes y servicios con recursos limitados."], "oferta y demanda": ["La oferta describe cuánto desean vender los productores y la demanda cuánto desean comprar los consumidores a distintos precios."], "inflacion": ["Es el aumento generalizado y sostenido de los precios; reduce el poder adquisitivo del dinero si los ingresos no acompañan."], "que es la filosofia": ["Es la reflexión crítica sobre preguntas fundamentales acerca del conocimiento, la realidad, la razón, la ética y la existencia."], "que es la etica": ["Es la rama de la filosofía que estudia lo correcto, lo incorrecto, los valores y cómo deberíamos actuar."], "que es la logica": ["Estudia reglas de razonamiento válido y cómo distinguir argumentos correctos de incorrectos."], "que es una metafora": ["Es una figura retórica que describe una cosa como si fuera otra para destacar una semejanza, por ejemplo: 'el tiempo es oro'."], "que es un sustantivo": ["Es una palabra que nombra personas, animales, objetos, lugares, ideas o sentimientos."], "que es un verbo": ["Es una palabra que expresa acciones, estados o procesos y suele variar según tiempo, persona y número."], "que es un adjetivo": ["Es una palabra que caracteriza o describe a un sustantivo, como 'alto', 'azul' o 'amable'."], "que es un adverbio": ["Es una palabra que modifica un verbo, adjetivo u otro adverbio, como 'rápidamente', 'muy' o 'ayer'."], "que es un sinonimo": ["Es una palabra o expresión con significado igual o parecido a otra, según el contexto."], "que es un antonimo": ["Es una palabra con significado opuesto a otra, como 'frío' y 'caliente'."], "que es un algoritmo en informatica": ["Es una secuencia finita y ordenada de instrucciones para resolver un problema o realizar una tarea."], "que es javascript": ["JavaScript es un lenguaje de programación usado para dar interactividad a páginas web y también para servidores y aplicaciones."], "que es css": ["CSS es el lenguaje que define la presentación visual de documentos web, como colores, tamaños y distribución."], "que es una variable en programacion": ["Una variable es un nombre asociado a un valor que un programa puede consultar o modificar, según el lenguaje."], "que es un bucle": ["Un bucle repite instrucciones mientras se cumpla una condición o durante una cantidad definida de veces."], "que es una base de datos": ["Es una colección organizada de datos que permite almacenarlos, consultarlos y modificarlos de manera estructurada."], "que es el aprendizaje automatico": ["Es una rama de la inteligencia artificial en la que sistemas ajustan modelos a partir de datos para reconocer patrones o hacer predicciones."], "que es una red neuronal": ["Es un modelo computacional inspirado de forma muy general en redes de neuronas, compuesto por unidades conectadas que ajustan parámetros durante el entrenamiento."], "que es un modelo de lenguaje": ["Es un sistema entrenado con texto para modelar patrones lingüísticos y producir o analizar lenguaje. No garantiza que cada respuesta sea correcta."], "que es una alucinacion de ia": ["Es cuando una IA genera información falsa o inventada y la presenta como si fuera cierta. Conviene verificar datos importantes."], "que es la ciberseguridad": ["Es la práctica de proteger dispositivos, redes, cuentas y datos contra accesos no autorizados y ataques."], "como crear una contrasena segura": ["Usa una frase larga y única para cada cuenta; un gestor de contraseñas ayuda. Activa la autenticación de dos factores y nunca compartas códigos de acceso."], "que es el phishing": ["Es un engaño que intenta robar contraseñas o datos haciéndose pasar por una entidad confiable. Comprueba remitentes y direcciones antes de abrir enlaces."], "que es la nube informatica": ["Es el uso de servidores remotos a través de una red para guardar datos o ejecutar servicios y aplicaciones."], "que es una api": ["Una API define cómo un programa puede solicitar funciones o datos de otro sistema mediante reglas acordadas."], "que es open source": ["El software de código abierto permite acceder a su código bajo una licencia que define cómo se puede usar, estudiar, modificar y redistribuir."], "que es la propiedad intelectual": ["Es el conjunto de derechos legales sobre creaciones como textos, música, diseños, inventos y marcas; sus reglas varían por país."], "metodo cientifico": ["Es un enfoque para investigar mediante observación, preguntas, hipótesis, pruebas, análisis y comunicación de resultados; puede repetirse y corregirse."], "que es una hipotesis": ["Es una explicación provisional y comprobable que puede ponerse a prueba con observaciones o experimentos."], "correlacion y causalidad": ["La correlación indica que dos variables cambian juntas; no demuestra por sí sola que una cause la otra."], "que es una estadistica": ["La estadística reúne métodos para recolectar, resumir, analizar e interpretar datos y expresar la incertidumbre."], "media mediana moda": ["Media: suma de valores dividida por la cantidad. Mediana: valor central al ordenar. Moda: valor que aparece más veces."], "probabilidad": ["La probabilidad mide qué tan posible es un evento, con valores entre 0 (imposible) y 1 (seguro), bajo un modelo definido."], "fraccion": ["Una fracción representa partes de un todo: el numerador indica cuántas partes se toman y el denominador en cuántas partes iguales se divide."], "porcentaje": ["Un porcentaje es una proporción sobre 100. Por ejemplo, 25% equivale a 25/100 o 0,25."], "numero negativo": ["Un número negativo es menor que cero y se representa con el signo menos, por ejemplo −3."], "numero irracional": ["Es un número real que no puede expresarse como fracción exacta de dos enteros; ejemplos son √2 y π."], "ecuacion": ["Una ecuación afirma que dos expresiones son iguales. Resolverla consiste en hallar los valores que hacen verdadera esa igualdad."], "pendiente de una recta": ["La pendiente mide cuánto cambia y cuando x aumenta una unidad; para dos puntos es (y₂−y₁)/(x₂−x₁), si x₂ no es x₁."], "perimetro": ["El perímetro es la longitud total del borde de una figura; se obtiene sumando las longitudes de sus lados."], "volumen": ["El volumen mide el espacio ocupado por un cuerpo y se expresa en unidades cúbicas, como cm³ o m³."], "teorema de pitagoras explicacion": ["En un triángulo rectángulo, la suma de los cuadrados de los catetos es igual al cuadrado de la hipotenusa: a²+b²=c²."], "sistema metrico": ["El sistema internacional usa unidades como metro para longitud, kilogramo para masa, segundo para tiempo, kelvin para temperatura y amperio para corriente."], "como convertir kilometros a metros": ["Multiplica los kilómetros por 1.000. Por ejemplo, 3 km = 3.000 m."], "como convertir horas a minutos": ["Multiplica las horas por 60. Por ejemplo, 2,5 horas = 150 minutos."], "que es la salud mental": ["Es parte de la salud general e incluye bienestar emocional, psicológico y social. Si algo te preocupa mucho, hablar con una persona de confianza o un profesional puede ayudar."], "habitos de estudio": ["Divide el estudio en sesiones, practica recordar sin mirar apuntes, repasa en días distintos, duerme lo suficiente y alterna materias cuando te resulte útil."], "como evaluar una fuente": ["Comprueba quién la publica, la fecha, las pruebas que presenta, sus posibles intereses y si otras fuentes confiables corroboran la información."], "que es la desinformacion": ["Es información falsa o engañosa que se difunde, a veces de forma deliberada. Contrasta titulares y busca la fuente original."], "limites de atlas": ["Soy un asistente local con una base de respuestas y un sistema para aprender datos que me enseñes. No tengo todo el conocimiento de una IA grande, no navego por internet sin conexión y puedo equivocarme; verifica información importante."], "puedes saberlo todo": ["No. Mi base offline cubre varios temas, pero no contiene todo el conocimiento humano ni se actualiza sola. Puedes enseñarme respuestas con /aprender pregunta | respuesta."], "como aprender algo en atlas": ["Escribe /aprender pregunta | respuesta. Por ejemplo: /aprender ¿Cuál es la capital de Argentina? | Buenos Aires. El dato se guarda en el almacenamiento del navegador de este dispositivo."], "como hacer una copia de seguridad de atlas": ["Los datos de aprendizaje se guardan localmente en el navegador. Borrar los datos del sitio o cambiar de navegador puede eliminarlos; conviene exportarlos si la app incorpora una función de copia de seguridad. Esta versión no sincroniza automáticamente entre dispositivos."]};
+Object.assign(BASE, EXTRA);
+// ===== v3: temas nuevos (deportes, películas, inglés, ciencia) =====
+const MAS = {
+// ---------- DEPORTES ----------
+"deportes": ["⚽ Puedo hablarte de fútbol, baloncesto, tenis, béisbol, Juegos Olímpicos y deportistas famosos. Prueba: «quién es Messi», «cuántos jugadores tiene el baloncesto» o «quién ganó el mundial 2026»."],
+"dato de deportes": ["Dato: el maratón mide 42,195 km. La distancia viene de la carrera de los Juegos de Londres 1908."],
+"cuantos jugadores tiene un equipo de futbol": ["En fútbol juegan 11 por equipo en la cancha (incluido el portero)."],
+"cuanto dura un partido de futbol": ["90 minutos: dos tiempos de 45, más el tiempo agregado por el árbitro. En eliminatorias puede haber prórroga (2 × 15 min) y penales."],
+"que es el fuera de juego": ["El fuera de juego (offside) ocurre cuando un atacante está más cerca de la línea de gol rival que el penúltimo defensor en el momento del pase, en campo contrario."],
+"que es un offside": ["El offside (fuera de juego) es cuando un atacante recibe el balón estando más adelantado que el penúltimo defensor rival en el momento del pase."],
+"que es un hat trick": ["Un hat-trick son tres goles de un mismo jugador en un partido."],
+"que es un penal": ["Es un tiro libre directo desde 11 metros, solo contra el portero, que se cobra cuando hay una falta dentro del área."],
+"cuanto mide una cancha de futbol": ["En partidos internacionales mide entre 100 y 110 m de largo y entre 64 y 75 m de ancho."],
+"deporte mas popular del mundo": ["El fútbol, con miles de millones de aficionados en todo el planeta."],
+"donde se invento el futbol": ["El fútbol moderno nació en Inglaterra: en 1863 se fundó la Football Association y se escribieron las primeras reglas oficiales."],
+"cada cuanto es el mundial": ["El Mundial de fútbol se juega cada 4 años."],
+"quien gano el mundial 2026": ["España ganó el Mundial 2026: venció 1-0 a Argentina en la final (19 de julio de 2026, MetLife Stadium) con gol de Ferran Torres en la prórroga. Fue su segunda estrella, tras 2010. 🏆"],
+"mundial 2026": ["El Mundial 2026 se jugó en Estados Unidos, México y Canadá, con 48 selecciones por primera vez. Campeón: España, que venció 1-0 a Argentina en la final."],
+"quien gano el mundial 2022": ["Argentina, que venció a Francia en la final de Qatar 2022 (3-3 y 4-2 en penales). Messi levantó la copa. 🏆"],
+"quien gano el mundial 2018": ["Francia ganó el Mundial de Rusia 2018, venciendo 4-2 a Croacia en la final."],
+"quien gano el mundial 2014": ["Alemania ganó el Mundial de Brasil 2014, venciendo 1-0 a Argentina en la final."],
+"quien gano el mundial 2010": ["España ganó su primer Mundial en Sudáfrica 2010, venciendo 1-0 a Países Bajos en la final."],
+"quien gano el mundial 2006": ["Italia ganó el Mundial de Alemania 2006, venciendo a Francia en penales."],
+"quien ha ganado mas mundiales": ["Brasil, con 5 títulos (1958, 1962, 1970, 1994 y 2002). Le siguen Alemania e Italia con 4 cada una."],
+"cuantos mundiales ha ganado argentina": ["Argentina ha ganado 3 Mundiales: 1978, 1986 y 2022."],
+"cuantos mundiales ha ganado brasil": ["Brasil ha ganado 5 Mundiales: 1958, 1962, 1970, 1994 y 2002."],
+"cuantos mundiales ha ganado espana": ["España ha ganado 2 Mundiales: 2010 y 2026."],
+"cuantos mundiales ha ganado mexico": ["México nunca ha ganado un Mundial. Su mejor resultado fueron los cuartos de final (1970 y 1986, ambos como anfitrión)."],
+"quien es messi": ["Lionel Messi es un futbolista argentino (nacido en 1987) considerado uno de los mejores de la historia. Ha ganado 8 Balones de Oro y el Mundial 2022 con Argentina."],
+"lionel messi": ["Lionel Messi: futbolista argentino, 8 Balones de Oro, campeón del mundo en 2022 y ganador de la Copa América 2021 y 2024."],
+"quien es cristiano ronaldo": ["Cristiano Ronaldo es un futbolista portugués (nacido en 1985), 5 veces Balón de Oro y máximo goleador histórico del fútbol de selecciones."],
+"cristiano ronaldo": ["Cristiano Ronaldo: delantero portugués, 5 Balones de Oro, campeón de la Eurocopa 2016 y 5 veces campeón de la Champions League."],
+"quien es pele": ["Pelé (1940-2022) fue un futbolista brasileño, el único que ganó 3 Mundiales (1958, 1962 y 1970). Es una leyenda del fútbol."],
+"quien es maradona": ["Diego Armando Maradona (1960-2020) fue un futbolista argentino, campeón del Mundial 1986, famoso por la «Mano de Dios» y su gol contra Inglaterra."],
+"maradona": ["Maradona: leyenda argentina del fútbol. Campeón del mundo en 1986 y ídolo del Napoli, en Italia."],
+"quien es neymar": ["Neymar es un futbolista brasileño (nacido en 1992), conocido por su regate y por jugar en Barcelona, PSG y Santos."],
+"quien es mbappe": ["Kylian Mbappé es un delantero francés (nacido en 1998), campeón del mundo en 2018 y autor de un triplete en la final de 2022."],
+"quien es usain bolt": ["Usain Bolt es un velocista jamaicano, el hombre más rápido del mundo: récord de 9,58 s en 100 m y 19,19 s en 200 m."],
+"quien es michael jordan": ["Michael Jordan es un exjugador de baloncesto estadounidense, 6 veces campeón de la NBA con los Chicago Bulls y considerado uno de los mejores de la historia."],
+"quien es lebron james": ["LeBron James es un jugador de baloncesto estadounidense, 4 veces campeón de la NBA y máximo anotador histórico de la liga."],
+"quien es serena williams": ["Serena Williams es una tenista estadounidense con 23 títulos de Grand Slam, una de las mejores de todos los tiempos."],
+"quien es roger federer": ["Roger Federer es un tenista suizo con 20 títulos de Grand Slam, famoso por su elegancia y su récord en Wimbledon."],
+"quien es rafael nadal": ["Rafael Nadal es un tenista español con 22 títulos de Grand Slam, incluyendo 14 en Roland Garros, el «rey de la tierra batida»."],
+"quien es novak djokovic": ["Novak Djokovic es un tenista serbio con 24 títulos de Grand Slam, el récord masculino."],
+"quien es michael phelps": ["Michael Phelps es un nadador estadounidense, el mayor medallista olímpico de la historia con 28 medallas (23 de oro)."],
+"quien es simone biles": ["Simone Biles es una gimnasta estadounidense, una de las más premiadas de la historia, con múltiples oros olímpicos y mundiales."],
+"quien es muhammad ali": ["Muhammad Ali (1942-2016) fue un boxeador estadounidense, 3 veces campeón mundial de peso pesado, apodado «The Greatest»."],
+"quien es lewis hamilton": ["Lewis Hamilton es un piloto británico de Fórmula 1 con 7 títulos mundiales, igualando el récord de Michael Schumacher."],
+"quien es tiger woods": ["Tiger Woods es un golfista estadounidense con 15 torneos majors, uno de los mejores de la historia."],
+"cuantos balones de oro tiene messi": ["Messi tiene 8 Balones de Oro: 2009, 2010, 2011, 2012, 2015, 2019, 2021 y 2023."],
+"cuantos balones de oro tiene cristiano": ["Cristiano Ronaldo tiene 5 Balones de Oro: 2008, 2013, 2014, 2016 y 2017."],
+"juegos olimpicos": ["Los Juegos Olímpicos modernos se celebran cada 4 años (verano e invierno se alternan cada 2). Los últimos de verano fueron París 2024 y los próximos serán Los Ángeles 2028. 🏅"],
+"que son los juegos olimpicos": ["Es el mayor evento deportivo del mundo, con atletas de todos los países. Los modernos se iniciaron en Atenas en 1896 por impulso de Pierre de Coubertin."],
+"donde seran los proximos juegos olimpicos": ["Los próximos Juegos Olímpicos de verano serán en Los Ángeles 2028, y los de invierno en los Alpes franceses en 2030."],
+"cuantos jugadores tiene el baloncesto": ["En baloncesto juegan 5 por equipo en la cancha."],
+"cuanto vale un triple": ["Un triple (tiro desde detrás de la línea de 3 puntos) vale 3 puntos. Un tiro libre vale 1 y un tiro normal, 2."],
+"quien invento el baloncesto": ["El baloncesto lo inventó James Naismith en 1891, en Massachusetts (EE. UU.)."],
+"quien tiene mas titulos de nba": ["Los Boston Celtics son el equipo con más títulos de la NBA (18). Les siguen los Lakers (17)."],
+"cuantos jugadores tiene el voleibol": ["En voleibol juegan 6 por equipo en la cancha."],
+"cuantos jugadores tiene el beisbol": ["En béisbol hay 9 jugadores por equipo en el campo y el juego tiene 9 entradas."],
+"cuantos jugadores tiene el rugby": ["El rugby union se juega con 15 jugadores por equipo (el rugby 7s, con 7)."],
+"cuantos jugadores tiene el futbol americano": ["En fútbol americano hay 11 jugadores por equipo en el campo."],
+"que es el super bowl": ["Es la final de la NFL, la liga de fútbol americano de EE. UU. Es uno de los eventos deportivos más vistos del mundo."],
+"como se puntua en tenis": ["En tenis los puntos son 0 (amor), 15, 30 y 40; luego juego. Se ganan sets, y el partido se gana por mejor de 3 o 5 sets."],
+"cuales son los grand slam de tenis": ["Los 4 Grand Slam son: Abierto de Australia, Roland Garros (Francia), Wimbledon (Reino Unido) y US Open (EE. UU.)."],
+"cuanto mide un maraton": ["Un maratón mide 42,195 km."],
+"que es la formula 1": ["Es la máxima categoría del automovilismo de velocidad en circuitos: monoplazas muy rápidos que compiten en el Campeonato Mundial de pilotos y constructores."],
+"cuantas piezas tiene el ajedrez": ["Cada jugador tiene 16 piezas, así que hay 32 en total en el tablero de 64 casillas."],
+"record de salto de altura": ["Dato: el récord de salto de altura masculino es de 2,45 m (Javier Sotomayor, 1993), y sigue vigente."],
+"record de 100 metros": ["El récord mundial de 100 m es de Usain Bolt: 9,58 segundos (Berlín 2009)."],
+"que es la champions league": ["Es el torneo de clubes más importante de Europa, organizado por la UEFA. El Real Madrid es, por mucho, el club con más títulos."],
+"que es la copa libertadores": ["Es el torneo de clubes más importante de Sudamérica, organizado por la CONMEBOL."],
+"que es la copa america": ["Es el torneo de selecciones de Sudamérica (y países invitados), organizado por la CONMEBOL."],
+"que es la eurocopa": ["Es el torneo de selecciones de Europa, organizado por la UEFA cada 4 años."],
+
+// ---------- PELÍCULAS ----------
+"peliculas": ["🎬 Puedo hablarte de directores, películas famosas, premios Óscar y el origen del cine. Prueba: «quién dirigió Titanic», «película más taquillera» o «quién inventó el cine»."],
+"cine": ["🎬 El cine nació a fines del siglo XIX. Los hermanos Lumière hicieron la primera proyección pública en París en 1895. Pregúntame por directores, películas u Óscar."],
+"quien invento el cine": ["Los hermanos Auguste y Louis Lumière, que presentaron el cinematógrafo en París en 1895."],
+"que es el cine mudo": ["Era el cine sin sonido sincronizado, con música en vivo y rótulos de texto. Dominó hasta fines de los años 20."],
+"primera pelicula sonora": ["«El cantante de jazz» (1927) es considerada la primera película sonora comercial."],
+"que son los oscar": ["Los Premios Óscar son los galardones anuales de la Academia de Artes y Ciencias Cinematográficas de EE. UU. Se entregan desde 1929."],
+"que pelicula tiene mas oscar": ["Tres películas empatan con 11 Óscar: Ben-Hur (1959), Titanic (1997) y El señor de los anillos: El retorno del rey (2003)."],
+"pelicula mas taquillera": ["Avatar (2009), de James Cameron, es la película más taquillera de la historia, con casi 3.000 millones de dólares."],
+"pelicula mas taquillera de la historia": ["Avatar (2009), de James Cameron, es la película más taquillera de la historia, con casi 3.000 millones de dólares."],
+"quien dirigio titanic": ["James Cameron dirigió Titanic (1997), que ganó 11 Óscar."],
+"quien dirigio avatar": ["James Cameron dirigió Avatar (2009) y sus secuelas."],
+"quien dirigio el padrino": ["Francis Ford Coppola dirigió El Padrino (1972), basada en la novela de Mario Puzo."],
+"quien dirigio jurassic park": ["Steven Spielberg dirigió Jurassic Park (1993), basada en la novela de Michael Crichton."],
+"quien es steven spielberg": ["Steven Spielberg es un director estadounidense: Tiburón, E.T., Indiana Jones, Parque Jurásico y La lista de Schindler."],
+"quien dirigio inception": ["Christopher Nolan dirigió Inception (El origen), de 2010."],
+"quien es christopher nolan": ["Christopher Nolan es un director británico: Memento, El caballero oscuro, Inception, Interstellar y Oppenheimer (2023, Óscar a mejor película)."],
+"quien dirigio star wars": ["George Lucas creó y dirigió la primera Star Wars (1977), hoy llamada «Episodio IV: Una nueva esperanza»."],
+"que es star wars": ["Star Wars es una saga de ciencia ficción creada por George Lucas en 1977: la Fuerza, los Jedi, los Sith y una galaxia muy, muy lejana. ⚔️"],
+"quien dirigio matrix": ["Las hermanas Wachowski dirigieron Matrix (1999)."],
+"quien dirigio parasite": ["Bong Joon-ho dirigió Parásitos (2019), la primera película de habla no inglesa en ganar el Óscar a mejor película."],
+"quien dirigio el senor de los anillos": ["Peter Jackson dirigió la trilogía de El señor de los anillos (2001-2003), basada en los libros de J. R. R. Tolkien."],
+"quien es alfred hitchcock": ["Alfred Hitchcock (1899-1980) fue un director británico, el «maestro del suspenso»: Psicosis, Los pájaros, Vértigo."],
+"quien es stanley kubrick": ["Stanley Kubrick fue un director estadounidense: 2001: Odisea del espacio, El resplandor, La naranja mecánica."],
+"quien es quentin tarantino": ["Quentin Tarantino es un director estadounidense: Pulp Fiction, Kill Bill, Django desencadenado."],
+"quien es guillermo del toro": ["Guillermo del Toro es un director mexicano: El laberinto del fauno, La forma del agua (Óscar a mejor película 2018) y Pinocho (Óscar animada 2023)."],
+"quien es alfonso cuaron": ["Alfonso Cuarón es un director mexicano: Y tu mamá también, Gravity (Óscar a mejor director) y Roma."],
+"quien es charles chaplin": ["Charles Chaplin fue un actor y director británico, estrella del cine mudo con su personaje «Charlot»."],
+"charlie chaplin": ["Charlie Chaplin fue un actor y director británico, estrella del cine mudo con su personaje «Charlot»."],
+"quien es leonardo dicaprio": ["Leonardo DiCaprio es un actor estadounidense: Titanic, El lobo de Wall Street y El renacido, que le dio su primer Óscar a mejor actor."],
+"quien es tom hanks": ["Tom Hanks es un actor estadounidense: Forrest Gump, Náufrago, Salvar al soldado Ryan y la voz de Woody en Toy Story."],
+"quien es meryl streep": ["Meryl Streep es una actriz estadounidense con 3 Óscar y más nominaciones que ningún otro intérprete."],
+"quien interpreto a jack sparrow": ["Johnny Depp interpretó al capitán Jack Sparrow en Piratas del Caribe."],
+"primera pelicula de pixar": ["Toy Story (1995) fue el primer largometraje de Pixar y el primero totalmente animado por computadora."],
+"primera pelicula de disney": ["Blancanieves y los siete enanos (1937) fue el primer largometraje animado de Disney."],
+"quien creo mickey mouse": ["Walt Disney y Ub Iwerks crearon a Mickey Mouse en 1928."],
+"de que trata coco": ["Coco (Pixar, 2017) cuenta la historia de Miguel, un niño mexicano que viaja a la Tierra de los Muertos. Ganó el Óscar a mejor película animada. 💀🎸"],
+"que es marvel": ["Marvel es una editorial de cómics y estudio. Su universo cinematográfico (MCU) comenzó en 2008 con Iron Man."],
+"quien escribio harry potter": ["J. K. Rowling escribió los libros de Harry Potter, que se llevaron al cine en 8 películas (2001-2011)."],
+"que es netflix": ["Netflix es una plataforma de streaming. Nació en 1997 como alquiler de DVD por correo y hoy produce series y películas propias."],
+"que es un cortometraje": ["Es una película de corta duración, normalmente de menos de 40 minutos."],
+"que es un documental": ["Es una película que retrata hechos o personas reales, sin ficción."],
+"generos de cine": ["Acción, comedia, drama, terror, ciencia ficción, animación, aventura, romance, suspenso, documental, musical y western, entre otros."],
+"que es el festival de cannes": ["Es uno de los festivales de cine más importantes del mundo, en Francia. Su premio máximo es la Palma de Oro."],
+"que es el oscar a mejor pelicula": ["Es el premio principal de los Óscar. En 2020, Parásitos fue la primera película de habla no inglesa en ganarlo."],
+
+// ---------- INGLÉS (gramática y vocabulario por temas) ----------
+"ingles": ["🇬🇧 Puedo ayudarte con inglés. Prueba: «cómo se dice gracias en inglés», «qué significa dog», «números en inglés», «verbo to be», «present simple» o «falsos amigos en inglés»."],
+"aprender ingles": ["Para aprender inglés: 1) practica 15 min al día, 2) escucha música y series en inglés con subtítulos en inglés, 3) aprende frases completas, no palabras sueltas, 4) háblalo en voz alta aunque te equivoques. Aquí puedes preguntarme «cómo se dice ... en inglés»."],
+"como aprender ingles": ["Constancia > intensidad: 15 min diarios, frases completas, escucha activa (música, series) y hablar en voz alta. Aquí puedes preguntarme «cómo se dice ... en inglés»."],
+"cuantas personas hablan ingles": ["Alrededor de 1.500 millones de personas hablan inglés, la mayoría como segunda lengua. Es el idioma más usado como lengua común en el mundo."],
+"numeros en ingles": ["1 one · 2 two · 3 three · 4 four · 5 five · 6 six · 7 seven · 8 eight · 9 nine · 10 ten\n11 eleven · 12 twelve · 13 thirteen · 14 fourteen · 15 fifteen\n20 twenty · 30 thirty · 40 forty · 50 fifty\n100 one hundred · 1000 one thousand"],
+"dias de la semana en ingles": ["Monday (lunes), Tuesday (martes), Wednesday (miércoles), Thursday (jueves), Friday (viernes), Saturday (sábado), Sunday (domingo)."],
+"meses del ano en ingles": ["January, February, March, April, May, June, July, August, September, October, November, December."],
+"colores en ingles": ["Red (rojo), blue (azul), green (verde), yellow (amarillo), black (negro), white (blanco), silver (plateado), gray (gris), orange (naranja), purple (morado), pink (rosa), brown (café)."],
+"animales en ingles": ["Dog (perro), cat (gato), bird (pájaro), fish (pez), horse (caballo), cow (vaca), pig (cerdo), sheep (oveja), rabbit (conejo), lion (león), elephant (elefante), monkey (mono)."],
+"partes del cuerpo en ingles": ["Head (cabeza), eye (ojo), ear (oreja), nose (nariz), mouth (boca), hand (mano), arm (brazo), leg (pierna), foot (pie), heart (corazón), back (espalda)."],
+"saludos en ingles": ["Hello / Hi (hola) · Good morning (buenos días) · Good afternoon (buenas tardes) · Good evening (buenas noches, al llegar) · Good night (buenas noches, al despedirse) · How are you? (¿cómo estás?) · See you later (hasta luego)."],
+"frases basicas en ingles": ["Please (por favor) · Thank you (gracias) · You're welcome (de nada) · Sorry (perdón) · Excuse me (disculpe) · I don't understand (no entiendo) · Can you help me? (¿puede ayudarme?) · How much is it? (¿cuánto cuesta?) · Where is the bathroom? (¿dónde está el baño?)"],
+"como presentarme en ingles": ["Hello! My name is ___. I'm ___ years old. I'm from ___. Nice to meet you! (Hola, me llamo ___, tengo ___ años, soy de ___. ¡Mucho gusto!)"],
+"verbo to be": ["El verbo «to be» (ser/estar): I am · you are · he/she/it is · we are · you are · they are. Negativo: I am not, he is not (isn't). Pregunta: Are you ready?"],
+"que es el verbo to be": ["El verbo «to be» significa ser o estar: I am, you are, he/she/it is, we are, you are, they are."],
+"present simple": ["El presente simple se usa para hábitos y verdades generales: I work, she works. En he/she/it se agrega -s. Negativo con don't/doesn't: I don't work, she doesn't work. Pregunta con do/does: Do you work?"],
+"past simple": ["El pasado simple narra hechos terminados. Verbos regulares: + -ed (work → worked). Irregulares cambian: go → went, see → saw. Negativo: didn't + verbo base (I didn't go). Pregunta: Did you go?"],
+"present continuous": ["Se usa para lo que ocurre ahora: am/is/are + verbo-ing. Ej.: I am studying (estoy estudiando), she is reading."],
+"futuro en ingles": ["Dos formas comunes: «will» para decisiones espontáneas o predicciones (I will help you) y «going to» para planes (I'm going to travel)."],
+"pronombres en ingles": ["I (yo), you (tú/usted), he (él), she (ella), it (ello), we (nosotros), they (ellos)."],
+"articulos en ingles": ["«The» es el artículo definido (el, la, los, las). «A» y «an» son indefinidos (un, una): a se usa antes de sonido consonante (a dog) y an antes de sonido vocal (an apple)."],
+"plural en ingles": ["Normalmente se agrega -s (cat → cats). Si termina en s, x, ch, sh se agrega -es (box → boxes). Hay irregulares: man → men, child → children, foot → feet, person → people."],
+"verbos irregulares": ["Algunos comunes (presente - pasado - participio): go - went - gone · see - saw - seen · eat - ate - eaten · have - had - had · do - did - done · take - took - taken · come - came - come · write - wrote - written."],
+"verbos modales": ["Los modales son can (poder), could (podría), must (deber), should (debería), may/might (quizás). Van seguidos del verbo en base: I can swim, you should study."],
+"preposiciones in on at": ["«In»: meses, años, espacios grandes (in May, in Mexico). «On»: días y superficies (on Monday, on the table). «At»: horas y lugares puntuales (at 5 pm, at home)."],
+"preguntas en ingles": ["Palabras interrogativas: what (qué), who (quién), where (dónde), when (cuándo), why (por qué), how (cómo), which (cuál), how much / how many (cuánto / cuántos)."],
+"falsos amigos en ingles": ["Palabras que engañan: actually = en realidad (no «actualmente»), library = biblioteca (no «librería»), embarrassed = avergonzado (no «embarazada»), sensible = sensato (no «sensible»), assist = ayudar (no «asistir a clase»), carpet = alfombra (no «carpeta»)."],
+"diferencia entre ingles britanico y americano": ["Cambian algo la pronunciación, el vocabulario y la ortografía: colour/color, lift/elevator, flat/apartment, football/soccer. Se entienden perfectamente."],
+"como se pronuncia th": ["La «th» se pronuncia poniendo la punta de la lengua entre los dientes y soplando suave: think, the, three. Es un sonido que no existe en español."],
+
+// ---------- CIENCIA (extra) ----------
+"ciencia": ["🔬 Puedo hablarte de física, química, biología, astronomía y más. Prueba: «tabla periodica», «que es el adn», «cuántos elementos hay» o «a qué velocidad gira la tierra»."],
+"tabla periodica": ["La tabla periódica ordena los elementos químicos por número atómico. La creó Dmitri Mendeléyev en 1869. Hoy tiene 118 elementos."],
+"cuantos elementos tiene la tabla periodica": ["La tabla periódica tiene 118 elementos confirmados."],
+"que es un elemento quimico": ["Es una sustancia formada por un solo tipo de átomo, como el oxígeno (O), el hierro (Fe) o el oro (Au)."],
+"que es una molecula": ["Es un grupo de átomos unidos por enlaces químicos. El agua (H₂O) es una molécula de dos hidrógenos y un oxígeno."],
+"que es el ph": ["El pH mide qué tan ácida o básica es una sustancia en una escala de 0 a 14. 7 es neutro (agua), menos de 7 es ácido y más de 7 es básico."],
+"cual es el elemento mas abundante del universo": ["El hidrógeno, que forma cerca del 75 % de la materia normal del universo."],
+"cual es el elemento mas abundante de la tierra": ["En la corteza terrestre el más abundante es el oxígeno; en el planeta completo es el hierro."],
+"simbolo del oro": ["El símbolo del oro es Au, del latín aurum."],
+"simbolo de la plata": ["El símbolo de la plata es Ag, del latín argentum. 🥈"],
+"cual es la formula del agua": ["H₂O: dos átomos de hidrógeno y uno de oxígeno."],
+"que es el oxigeno": ["Es el elemento químico O (número atómico 8). Es un gas esencial para la respiración de la mayoría de los seres vivos."],
+"que es el dioxido de carbono": ["El CO₂ es un gas que exhalamos al respirar y que absorben las plantas en la fotosíntesis. También es un gas de efecto invernadero."],
+"que es la presion atmosferica": ["Es el peso del aire sobre nosotros. Al nivel del mar es de unos 1013 hPa (1 atm) y disminuye con la altura."],
+"que es la velocidad": ["La velocidad es la distancia recorrida en un tiempo: v = d / t. Se mide en m/s o km/h."],
+"que es la masa": ["La masa es la cantidad de materia de un cuerpo. Se mide en kilogramos y no cambia con el lugar, a diferencia del peso."],
+"diferencia entre masa y peso": ["La masa es la cantidad de materia (kg). El peso es la fuerza con que la gravedad atrae esa masa (newtons), por eso en la Luna pesas menos pero tu masa es la misma."],
+"que es el magnetismo": ["Es la fuerza que ejercen los imanes y las corrientes eléctricas. Los polos iguales se repelen y los opuestos se atraen. 🧲"],
+"que es la relatividad": ["La teoría de la relatividad de Einstein explica que el espacio y el tiempo están unidos y que la gravedad curva el espacio-tiempo. Nada con masa supera la velocidad de la luz."],
+"quien es albert einstein": ["Albert Einstein (1879-1955) fue un físico alemán que formuló la teoría de la relatividad. Ganó el Nobel de Física en 1921 por el efecto fotoeléctrico."],
+"quien es marie curie": ["Marie Curie (1867-1934) fue una científica polaco-francesa, pionera en radiactividad. Ganó dos premios Nobel (Física 1903 y Química 1911)."],
+"quien es charles darwin": ["Charles Darwin (1809-1882) fue un naturalista británico, autor de «El origen de las especies» (1859), donde propuso la selección natural."],
+"quien es nikola tesla": ["Nikola Tesla (1856-1943) fue un inventor e ingeniero serbio-estadounidense, clave en el desarrollo de la corriente alterna."],
+"quien es stephen hawking": ["Stephen Hawking (1942-2018) fue un físico británico famoso por sus estudios de agujeros negros y el libro «Breve historia del tiempo»."],
+"quien descubrio la penicilina": ["Alexander Fleming descubrió la penicilina en 1928, el primer antibiótico."],
+"quien descubrio la gravedad": ["Isaac Newton formuló la ley de la gravitación universal (1687). Se cuenta, popularmente, que la idea le surgió al ver caer una manzana."],
+"cuanto tarda la luz del sol en llegar a la tierra": ["Unos 8 minutos y 20 segundos."],
+"a que distancia esta la luna": ["La Luna está a unos 384.400 km de la Tierra."],
+"a que distancia esta el sol": ["El Sol está a unos 150 millones de km de la Tierra (1 unidad astronómica)."],
+"cuantas lunas tiene jupiter": ["Júpiter tiene decenas de lunas confirmadas (más de 90). Las cuatro principales son Ío, Europa, Ganímedes y Calisto."],
+"cual es el planeta mas caliente": ["Venus es el planeta más caliente (~465 °C) por su densa atmósfera de CO₂, aunque Mercurio esté más cerca del Sol."],
+"por que el cielo es azul": ["Porque la atmósfera dispersa más la luz azul del Sol que la roja (dispersión de Rayleigh)."],
+"que es un eclipse": ["Es cuando un astro oculta a otro. En un eclipse solar la Luna tapa al Sol; en uno lunar, la Tierra proyecta su sombra sobre la Luna. 🌑"],
+"que es una estrella": ["Es una esfera enorme de gas que brilla por reacciones de fusión nuclear. El Sol es una estrella."],
+"que es un cometa": ["Un cometa es un cuerpo de hielo y polvo que, al acercarse al Sol, desarrolla una cola brillante."],
+"que es un asteroide": ["Es un cuerpo rocoso pequeño que orbita al Sol, sobre todo en el cinturón entre Marte y Júpiter."],
+"cuantos cromosomas tiene el ser humano": ["46 cromosomas (23 pares)."],
+"que es el cerebro": ["Es el órgano que controla el cuerpo, los pensamientos, la memoria y las emociones. Tiene unos 86.000 millones de neuronas. 🧠"],
+"que son las proteinas": ["Son moléculas formadas por aminoácidos que construyen y reparan tejidos y cumplen muchas funciones (enzimas, defensa, transporte)."],
+"que son los antibioticos": ["Son medicamentos que combaten infecciones por bacterias. No sirven contra virus como el de la gripe. Úsalos solo con indicación médica."],
+"que es la sangre": ["Es el líquido que transporta oxígeno, nutrientes y defensas por el cuerpo. Tiene glóbulos rojos, glóbulos blancos, plaquetas y plasma. 🩸"],
+"cual es el organo mas grande del cuerpo": ["La piel es el órgano más grande del cuerpo humano."],
+"que es la inercia": ["Es la tendencia de un cuerpo a mantener su estado de reposo o de movimiento, a menos que una fuerza actúe sobre él (primera ley de Newton)."],
+"que es el efecto doppler": ["Es el cambio en la frecuencia de una onda cuando la fuente o el observador se mueven. Por eso la sirena de una ambulancia suena más aguda al acercarse."]
+};
+for(const k in MAS){ if(!(k in BASE)) BASE[k]=MAS[k]; }
+
+function limpiar(s){
+  s=String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  s=s.replace(/[^\p{L}\p{N} +\-*\/^().,%¿?!:_|'×÷]/gu,' ');
+  return s.split(/\s+/).filter(Boolean).join(' ');
+}
+let saber={}, aprendido={};
+function cargar(){
+  saber={}; for(const k in BASE) saber[limpiar(k)]=BASE[k].slice();
+  for(const k in aprendido) saber[limpiar(k)]=aprendido[k].slice();
+}
+function evalExpr(src){
+  const toks=[]; const re=/\s*(\d+(?:\.\d+)?|\.\d+|\*\*|\/\/|[-+*\/%()])/y; let p=0; src=src.trim();
+  while(p<src.length){ re.lastIndex=p; const m=re.exec(src); if(!m) throw 0; toks.push(m[1]); p=re.lastIndex; }
+  if(toks.length<3) throw 0;
+  let i=0; const peek=()=>toks[i], next=()=>toks[i++];
+  const chk=v=>{ if(!isFinite(v)||Math.abs(v)>1e100) throw 0; return v; };
+  function atom(){ const t=next(); if(t===undefined) throw 0; if(t==='('){ const v=expr(); if(next()!==')') throw 0; return v; } const n=parseFloat(t); if(isNaN(n)) throw 0; return n; }
+  function power(){ const a=atom(); if(peek()==='**'){ next(); const b=unary(); if(Math.abs(b)>10) throw 0; return chk(Math.pow(a,b)); } return a; }
+  function unary(){ if(peek()==='-'){ next(); return -unary(); } if(peek()==='+'){ next(); return unary(); } return power(); }
+  function term(){ let a=unary(); while(['*','/','//','%'].includes(peek())){ const o=next(); const b=unary(); if(o!=='*'&&b===0) throw 0; a=chk(o==='*'?a*b:o==='/'?a/b:o==='//'?Math.floor(a/b):((a%b)+b)%b); } return a; }
+  function expr(){ let a=term(); while(peek()==='+'||peek()==='-'){ const o=next(); const b=term(); a=chk(o==='+'?a+b:a-b); } return a; }
+  const r=expr(); if(i!==toks.length) throw 0; return r;
+}
+const fmt=n=>Number.isInteger(n)?String(n):String(parseFloat(n.toFixed(10)));
+const num=s=>parseFloat(s.replace(',','.'));
+function calcular(raw){
+  let t=limpiar(raw), m;
+  if((m=t.match(/(-?\d+(?:[.,]\d+)?)\s*%\s*de\s*(-?\d+(?:[.,]\d+)?)/))) return `🧮 El ${m[1]}% de ${m[2]} es ${fmt(num(m[1])*num(m[2])/100)}.`;
+  if((m=t.match(/raiz(?: cuadrada)? de\s*(-?\d+(?:[.,]\d+)?)/))){ const n=num(m[1]); return n<0?'No existe una raíz cuadrada real para un número negativo.':`🧮 La raíz cuadrada de ${m[1]} es ${fmt(Math.sqrt(n))}.`; }
+  if((m=t.match(/tengo\s+(\d+)\s+\w+.*?(?:doy|regalo|pierdo|quito)\s+(\d+)/))) return `🧮 Si empiezas con ${m[1]} y das o quitas ${m[2]}, quedan ${(+m[1])-(+m[2])}.`;
+  for(const p of ['cuanto es ','calcula ','calculame ','resuelve ']) if(t.startsWith(p)){ t=t.slice(p.length); break; }
+  t=t.replace(/ mas /g,'+').replace(/ menos /g,'-').replace(/ por /g,'*').replace(/ entre /g,'/').replace(/x/g,'*').replace(/×/g,'*').replace(/÷/g,'/').replace(/\^/g,'**').replace(/,/g,'.').trim();
+  if(!t||t.length>90||!/^[0-9.+*\/()%\- ]+$/.test(t)) return null;
+  try{ return '🧮 El resultado es '+fmt(evalExpr(t))+'.'; }catch(e){ return null; }
+}
+// ===== Diccionario español → inglés (para «cómo se dice X en inglés» y «qué significa X») =====
+const DIC_RAW = {
+"hola":"hello / hi","adiós":"goodbye / bye","gracias":"thank you / thanks","muchas gracias":"thank you very much","por favor":"please","de nada":"you're welcome","perdón":"sorry / excuse me","lo siento":"I'm sorry","buenos días":"good morning","buenas tardes":"good afternoon","buenas noches":"good evening / good night","cómo estás":"how are you?","estoy bien":"I'm fine","mucho gusto":"nice to meet you","me llamo":"my name is","cómo te llamas":"what's your name?","cuánto cuesta":"how much is it?","dónde está el baño":"where is the bathroom?","no entiendo":"I don't understand","hablas español":"do you speak Spanish?","te quiero":"I love you","te amo":"I love you","te extraño":"I miss you","buena suerte":"good luck","feliz cumpleaños":"happy birthday","feliz navidad":"merry Christmas","feliz año nuevo":"happy new year","salud":"cheers","sí":"yes","no":"no","quizás":"maybe","ayuda":"help","bienvenido":"welcome","hasta luego":"see you later","hasta mañana":"see you tomorrow","qué hora es":"what time is it?","cuántos años tienes":"how old are you?","de dónde eres":"where are you from?","tengo hambre":"I'm hungry","tengo sed":"I'm thirsty","tengo sueño":"I'm sleepy","estoy cansado":"I'm tired",
+"perro":"dog","gato":"cat","pájaro":"bird","pez":"fish","caballo":"horse","vaca":"cow","cerdo":"pig","oveja":"sheep","conejo":"rabbit","león":"lion","elefante":"elephant","mono":"monkey",
+"casa":"house","agua":"water","comida":"food","libro":"book","amigo":"friend","amiga":"friend","familia":"family","escuela":"school","trabajo":"job / work","mesa":"table","silla":"chair","ventana":"window","puerta":"door","coche":"car","carro":"car","auto":"car","bicicleta":"bicycle","teléfono":"phone","celular":"cell phone","computadora":"computer","ciudad":"city","país":"country","calle":"street","mundo":"world","sol":"sun","luna":"moon","estrella":"star","cielo":"sky","mar":"sea","río":"river","montaña":"mountain","árbol":"tree","flor":"flower","lluvia":"rain","viento":"wind","fuego":"fire","tierra":"earth","playa":"beach",
+"manzana":"apple","pan":"bread","leche":"milk","café":"coffee","té":"tea","pollo":"chicken","pescado":"fish","arroz":"rice","queso":"cheese","huevo":"egg","carne":"meat","fruta":"fruit","verdura":"vegetable","agua mineral":"mineral water","jugo":"juice","azúcar":"sugar","sal":"salt",
+"madre":"mother","mamá":"mom","padre":"father","papá":"dad","hermano":"brother","hermana":"sister","hijo":"son","hija":"daughter","abuelo":"grandfather","abuela":"grandmother","tío":"uncle","tía":"aunt","primo":"cousin","niño":"boy / child","niña":"girl","hombre":"man","mujer":"woman","bebé":"baby",
+"cabeza":"head","ojo":"eye","oreja":"ear","nariz":"nose","boca":"mouth","mano":"hand","brazo":"arm","pierna":"leg","pie":"foot","corazón":"heart","espalda":"back","dedo":"finger",
+"feliz":"happy","triste":"sad","grande":"big","pequeño":"small","bonito":"beautiful / pretty","rápido":"fast","lento":"slow","nuevo":"new","viejo":"old","bueno":"good","malo":"bad","caliente":"hot","frío":"cold","fácil":"easy","difícil":"difficult / hard","cansado":"tired","enojado":"angry","amor":"love","tiempo":"time / weather","día":"day","noche":"night","semana":"week","mes":"month","año":"year","hoy":"today","mañana":"tomorrow","ayer":"yesterday","ahora":"now","siempre":"always","nunca":"never","también":"also","pero":"but","porque":"because","quién":"who","qué":"what","dónde":"where","cuándo":"when","cómo":"how","por qué":"why",
+"maestro":"teacher","profesor":"teacher","estudiante":"student","médico":"doctor","dinero":"money","tienda":"store","ropa":"clothes","zapatos":"shoes","camisa":"shirt","pantalón":"pants","sombrero":"hat","rojo":"red","azul":"blue","verde":"green","amarillo":"yellow","negro":"black","blanco":"white","plateado":"silver","gris":"gray","naranja":"orange","morado":"purple","rosa":"pink",
+"uno":"one","dos":"two","tres":"three","cuatro":"four","cinco":"five","seis":"six","siete":"seven","ocho":"eight","nueve":"nine","diez":"ten","cien":"one hundred","mil":"one thousand",
+"comer":"to eat","beber":"to drink","correr":"to run","caminar":"to walk","dormir":"to sleep","hablar":"to speak","leer":"to read","escribir":"to write","ver":"to see","mirar":"to watch / to look","escuchar":"to listen","ir":"to go","venir":"to come","querer":"to want","tener":"to have","ser":"to be","estar":"to be","hacer":"to do / to make","jugar":"to play","trabajar":"to work","estudiar":"to study","aprender":"to learn","enseñar":"to teach","amar":"to love","vivir":"to live","saber":"to know","pensar":"to think","cantar":"to sing","bailar":"to dance","abrir":"to open","cerrar":"to close","comprar":"to buy","vender":"to sell","ayudar":"to help","necesitar":"to need"
+};
+const normI = s => limpiar(s).replace(/[?¿!¡.,]/g,'').trim();
+const DIC = {}, REV = {}, DISP = {};
+for(const k in DIC_RAW){ const kk=normI(k); DIC[kk]=DIC_RAW[k]; DISP[kk]=k; DIC_RAW[k].split(' / ').forEach(v=>{ const vv=normI(v); if(!(vv in REV)) REV[vv]=k; }); }
+const ART_ES=/^(el|la|los|las|un|una|unos|unas)\s+/, ART_EN=/^(the|a|an|to)\s+/;
+function ingles(raw){
+  const t=normI(raw); let m, w, dir, fuerte=false;
+  if((m=t.match(/^(?:como se dice|como digo|traduce(?:me)?|traducir|traduccion de)\s+(.+?)\s+(?:en|al) ingles$/))){ dir='en'; w=m[1]; fuerte=true; }
+  else if((m=t.match(/^(?:como se dice|traduce(?:me)?|traducir)\s+(.+?)\s+(?:en|al) espanol$/))){ dir='es'; w=m[1]; fuerte=true; }
+  else if((m=t.match(/^(?:que significa|que quiere decir|significado de|que quiere decir la palabra|que significa la palabra)\s+(.+)$/))){ dir='es'; w=m[1].replace(/\s+en espanol$/,''); }
+  else if((m=t.match(/^(.+?)\s+en ingles$/)) && m[1].split(' ').length<=4){ dir='en'; w=m[1]; }
+  else return null;
+  w=normI(w);
+  if(dir==='en'){
+    const r=DIC[w]||DIC[w.replace(ART_ES,'')];
+    if(r){ const wk=DIC[w]?w:w.replace(ART_ES,''); return '🇬🇧 «'+(DISP[wk]||w)+'» en inglés: '+r; }
+    return fuerte?'No tengo «'+w+'» en mi diccionario de inglés todavía 🤔\nEnséñame con:\n/aprender como se dice '+w+' en ingles | su traducción':null;
+  }
+  const e=REV[w]||REV[w.replace(ART_EN,'')]||REV['to '+w];
+  if(e) return '🇪🇸 «'+w+'» en español: '+e;
+  return fuerte?'No tengo «'+w+'» en mi diccionario todavía 🤔\nEnséñame con:\n/aprender como se dice '+w+' en espanol | su traducción':null;
+}
+const STOP=new Set('que es un una el la los las de del y a en como cual cuales quien son por para me mi tu te se lo al con fue fueron era esta estas estoy eres soy cuando donde cuanto cuantos hay o u e sobre algo dime cuentame hablame paso'.split(' '));
+function lev(a,b){ const m=a.length,n=b.length; let pr=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(pr[j]+1,c[j-1]+1,pr[j-1]+(a[i-1]===b[j-1]?0:1)); pr=c; }
+  return 1-pr[n]/Math.max(m,n,1); }
+function buscar(t){
+  if(saber[t]) return t;
+  let best=null;
+  for(const k in saber) if(k.length>=4&&t.includes(k)&&(!best||k.length>best.length)) best=k;
+  if(best) return best;
+  const w=new Set(t.split(' ').filter(x=>!STOP.has(x))); let bk=null,bs=0;
+  for(const k in saber){ const kc=[...new Set(k.split(' ').filter(x=>!STOP.has(x)&&x.length>1))];
+    if(!kc.length||k.length<4) continue;
+    if(kc.every(x=>w.has(x))){ const s=kc.length*1000+k.length; if(s>bs){bs=s;bk=k;} } }
+  if(bk) return bk;
+  const tc=[...w].join(' '); if(tc.length<4) return null;
+  let fk=null,fs=0;
+  for(const k in saber){ const kc=k.split(' ').filter(x=>!STOP.has(x)&&x.length>1).join(' '); if(kc.length<4) continue; if(Math.min(tc.length,kc.length)<6) continue; const r=lev(tc,kc); if(r>fs){fs=r;fk=k;} }
+  return fs>=0.8?fk:null;
+}
+// ===== v5.4: fe (Dios, Biblia…) y más chistes =====
+(function(){ const FE={"dios": ["Dios es, para el cristianismo (y también para el judaísmo y el islam), el creador de todo lo que existe. Los cristianos creen en un solo Dios que se revela como Padre, Hijo (Jesús) y Espíritu Santo, y que ama a las personas. 🙏\nPuedes preguntarme: «quién es Jesús», «qué es la Biblia», «qué es el evangelio» o «qué es la fe»."], "quien es dios": ["Dios es, para el cristianismo, el creador de todo y un Dios que ama a las personas: uno solo en tres personas (Padre, Hijo y Espíritu Santo). 🙏 Pregúntame también por Jesús, la Biblia o el evangelio."], "que es dios": ["Dios es, para los cristianos, el Creador: eterno, todopoderoso y lleno de amor. Cree en un solo Dios que se da a conocer como Padre, Hijo y Espíritu Santo. 🙏"], "existe dios": ["Es una pregunta de fe y de filosofía. Los creyentes responden que sí, por su fe, su experiencia y lo que enseñan las Escrituras; otras personas no lo creen o piensan que no se puede comprobar. Yo puedo contarte lo que cree el cristianismo si quieres. 🙏"], "quien es jesus": ["Jesús de Nazaret es la figura central del cristianismo. Los cristianos creen que es el Hijo de Dios, que murió en la cruz por los pecados de las personas y resucitó al tercer día. Sus enseñanzas y su vida están en los evangelios: Mateo, Marcos, Lucas y Juan. ✝️"], "quien es jesucristo": ["Jesucristo es Jesús de Nazaret, llamado «Cristo» (el Mesías, el Ungido). Para los cristianos es el Hijo de Dios, que murió por nosotros y resucitó. ✝️"], "que es la biblia": ["La Biblia es el libro sagrado del cristianismo. Tiene el Antiguo Testamento y el Nuevo Testamento. La versión protestante tiene 66 libros (39 y 27) y la católica 73. La escribieron muchos autores a lo largo de cientos de años. 📖"], "que es el evangelio": ["«Evangelio» significa «buena noticia». Para los cristianos, la buena noticia es que Jesús murió y resucitó para dar perdón y vida eterna a quien cree en Él. También se llaman evangelios los cuatro libros que cuentan su vida: Mateo, Marcos, Lucas y Juan. 📖"], "que es la fe": ["La fe es confiar en algo o en alguien aunque no se vea. En el cristianismo es confiar en Dios y en lo que Jesús hizo por nosotros. 🙏"], "que es la oracion": ["La oración es hablar con Dios: dar gracias, pedir, pedir perdón o simplemente conversar con Él. No hacen falta palabras especiales. 🙏"], "que es el espiritu santo": ["Para los cristianos, el Espíritu Santo es la tercera persona de la Trinidad: Dios actuando en las personas, guiándolas, consolándolas y dándoles fuerzas."], "que es la trinidad": ["Es una enseñanza central del cristianismo: hay un solo Dios en tres personas —Padre, Hijo y Espíritu Santo— que comparten la misma naturaleza divina."], "los diez mandamientos": ["Según la Biblia (Éxodo 20), Dios los dio a Moisés en el monte Sinaí: adorar solo a Dios, no hacer ídolos, no usar su nombre en vano, guardar el día de reposo, honrar a padre y madre, no matar, no cometer adulterio, no robar, no mentir y no codiciar. 📜"], "quien es moises": ["Moisés fue, según la Biblia, el líder que sacó al pueblo de Israel de Egipto y recibió los diez mandamientos en el monte Sinaí."], "que es el pecado": ["En la Biblia, el pecado es apartarse de lo que Dios quiere. Los cristianos creen que Jesús ofrece perdón a quien se arrepiente y cree en Él."], "que es la navidad": ["La Navidad es la fiesta cristiana que recuerda el nacimiento de Jesús, el 25 de diciembre. 🎄"], "que es la pascua": ["Para los cristianos, la Pascua (Semana Santa y Domingo de Resurrección) recuerda la muerte y la resurrección de Jesús. ✝️"]}; const ya=new Set(Object.keys(BASE).map(limpiar)); for(const k in FE) if(!ya.has(k)) BASE[k]=FE[k];
+ const CH=["¿Qué hace una abeja en el gimnasio? ¡Zumba! 🐝", "¿Por qué los pájaros no usan Facebook? Porque ya tienen Twitter 🐦😂", "¿Qué le dice un techo a otro techo? Techo de menos 🏠", "¿Por qué estaba triste el libro de matemáticas? Porque tenía muchos problemas 📘", "¿Cómo se despiden los químicos? Ácido un placer 🧪", "¿Qué le dice el número cero al ocho? ¡Bonito cinturón! 😄", "¿Por qué los esqueletos no pelean entre ellos? Porque no tienen agallas 💀", "¿Qué le dice un semáforo a otro? No me mires, que me estoy cambiando 🚦", "¿Por qué la computadora fue al médico? Porque tenía un virus 💻", "¿Qué le dice una iguana a su hermana gemela? Somos iguanitas 🦎", "¿Qué hace un perro con un taladro? ¡Taladrando! 🐶", "¿Cuál es el café más peligroso? El ex-preso ☕😅"]; const CK=['cuentame un chiste','dime un chiste','chiste','otro chiste','cuenta un chiste','dime otro chiste','cuentame otro chiste']; for(const k of Object.keys(BASE)) if(CK.includes(limpiar(k))) delete BASE[k]; for(const k of CK) BASE[k]=CH.slice(); })();
+// CORE-END
+const $=id=>document.getElementById(id);
+const msgs=$('msgs'), inp=$('inp');
+let nombre=''; try{ nombre=localStorage.getItem('atlas_nombre')||''; }catch(e){}
+function sha256(s){
+  const K=[],H=[1779033703,3144134277,1013904242,2773480762,1359893119,2600822924,528734635,1541459225];
+  let p=2,n=0; while(n<64){ let ok=true; for(let i=2;i*i<=p;i++) if(p%i===0){ ok=false; break; } if(ok){ K[n++]=(Math.pow(p,1/3)%1)*4294967296|0; } p++; }
+  const b=Array.from(new TextEncoder().encode(s)), l=b.length*8; b.push(128); while(b.length%64!==56) b.push(0);
+  for(let i=7;i>=0;i--) b.push(i>3?0:(l>>>(i*8))&255);
+  const rr=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let o=0;o<b.length;o+=64){
+    const w=[]; for(let i=0;i<16;i++) w[i]=(b[o+4*i]<<24)|(b[o+4*i+1]<<16)|(b[o+4*i+2]<<8)|b[o+4*i+3];
+    for(let i=16;i<64;i++){ const a=w[i-15],c=w[i-2]; w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(c,17)^rr(c,19)^(c>>>10)))|0; }
+    let [a,bb,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){ const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])|0, t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&bb)^(a&c)^(bb&c)))|0; h=g;g=f;f=e;e=(d+t1)|0;d=c;c=bb;bb=a;a=(t1+t2)|0; }
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+  }
+  return H.map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
+
+const PIN_HASH='1811b67ba19d1cf571f8c41ab352fd4709f74ffb0f3d08c6b6b84e0677957357';
+function esDueno(){ try{ return localStorage.getItem('atlas_dueno')==='1'; }catch(e){ return false; } }
+function pinHash(){ try{ return localStorage.getItem('atlas_pin_hash')||PIN_HASH; }catch(e){ return PIN_HASH; } }
+function pinOk(p){ return sha256('atlas|'+p)===pinHash(); }
+function refrescarDueno(){ const b=document.getElementById('chipAyuda'); if(b) b.style.display=esDueno()?'':'none'; }
+const PERS=(window.ATLAS_PERSONAL&&typeof window.ATLAS_PERSONAL==='object')?window.ATLAS_PERSONAL:{};
+try{ if(Array.isArray(PERS.saludos)){ const sl=PERS.saludos.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,200)).slice(0,20); if(sl.length) BASE['hola']=sl; } }catch(e){}
+const pres=()=>(typeof PERS.presentacion==='string'&&PERS.presentacion.trim())?PERS.presentacion.trim().slice(0,200):'Soy ATLAS IA 🤖. Puedo responder temas guardados, calcular y aprender.';
+const saludo=()=>nombre?`¡Hola, ${nombre}! 👋 ${pres()}${esDueno()?' Escribe /ayuda.':' Pregúntame lo que quieras.'}`:'¡Hola! 👋 Soy ATLAS IA 🤖. ¿Cómo te llamas?';
+const NOGREET=new Set('hola holi ola hey buenas buenos dias tardes noches que tal como estas ok si no nada gracias adios jaja jajaja xd lol bien mal ayuda y tu'.split(' '));
+function sacarNombre(r){
+  if(/[?¿]/.test(r)||r.trim().startsWith('/')) return '';
+  let t=r.trim().replace(/[.!¡,;:]+/g,' ').replace(/\s+/g,' ').trim();
+  t=t.replace(/^(hola[ ,]+)?(me llamo|mi nombre es|yo soy|soy|ll[aá]mame|puedes llamarme|me dicen|me puedes decir)\s+/i,'');
+  const w=t.split(' ').filter(Boolean).slice(0,3);
+  if(!w.length||w.every(x=>NOGREET.has(limpiar(x)))) return '';
+  return w.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' ');
+}
+function guardarNombre(n){ nombre=n; try{ localStorage.setItem('atlas_nombre',n); }catch(e){} }
+try{ aprendido=JSON.parse(localStorage.getItem('mi_ia_v6')||'{}'); }catch(e){ aprendido={}; }
+// Aprendizaje inicial (se agrega una sola vez; si luego lo borras con /olvidar, no vuelve)
+try{ if(!localStorage.getItem('atlas_seed_vaso')){ if(!aprendido['que es un vaso']) aprendido['que es un vaso']=['Es un recipiente para beber.']; localStorage.setItem('atlas_seed_vaso','1'); } }catch(e){ if(!aprendido['que es un vaso']) aprendido['que es un vaso']=['Es un recipiente para beber.']; }
+cargar();
+let chats=[], cur=null;
+try{ const d=JSON.parse(localStorage.getItem('mi_ia_v6_chats')||'null'); if(d&&Array.isArray(d.chats)){ chats=d.chats; cur=d.cur; } }catch(e){}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const chat=()=>chats.find(c=>c.id===cur);
+function nuevo(){ const c={id:uid(),title:'Chat nuevo',msgs:[{r:'b',t:saludo()}],pending:nombre?null:'__nombre__',t:Date.now()}; chats.unshift(c); cur=c.id; return c; }
+if(!chats.length) nuevo(); else if(!chat()) cur=chats[0].id;
+{ const c0=chat(); if(!nombre&&c0.msgs.length<=1){ c0.msgs=[{r:'b',t:saludo()}]; c0.pending='__nombre__'; } }
+function persist(){ try{ localStorage.setItem('mi_ia_v6_chats',JSON.stringify({chats:chats.map(c=>Object.assign({},c,{msgs:c.msgs.slice(-200)})),cur})); }catch(e){} }
+function guardar(){ try{ localStorage.setItem('mi_ia_v6',JSON.stringify(aprendido)); }catch(e){} $('count').textContent=Object.keys(saber).length+' temas guardados'; try{ avisoResp(); }catch(e){} }
+function bubble(m){
+  const d=document.createElement('div');
+  d.className='m '+(m.r==='u'?'u':'b')+(m.img?' gen':'');
+  if(m.t) d.appendChild(document.createTextNode(m.t));
+  if(m.draw){
+    const cv=document.createElement('canvas'); cv.className='dib'; d.appendChild(cv);
+    try{ dibujar(cv,m.draw.p,m.draw.s); }catch(e){ cv.replaceWith(document.createTextNode('(No pude dibujar esto)')); }
+    cv.onclick=()=>{ try{ const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download='atlas-ia-dibujo.png'; document.body.appendChild(a); a.click(); a.remove(); toast('🖼️ Dibujo guardado'); }catch(e){} };
+    if(m.cap){ const c=document.createElement('div'); c.className='img-cap'; c.textContent=m.cap; d.appendChild(c); }
+  } else if(m.online){
+    const box=document.createElement('div'); box.className='onl'; d.appendChild(box);
+    cargarOnline(box,m.online);
+    if(m.cap){ const c=document.createElement('div'); c.className='img-cap'; c.textContent=m.cap; d.appendChild(c); }
+  } else if(m.img){
+    d.appendChild(document.createTextNode('\n(Imagen anterior: ATLAS IA ya no usa servicios externos. Pídeme un dibujo nuevo 🎨)'));
+  }
+  msgs.appendChild(d);
+}
+function render(){ msgs.innerHTML=''; chat().msgs.forEach(bubble); msgs.scrollTop=msgs.scrollHeight; $('ctitle').textContent=chat().title; }
+function add(r,t,img,cap,draw,online){
+  const c=chat(), m={r,t};
+  if(img) m.img=img;
+  if(cap) m.cap=cap;
+  if(draw) m.draw=draw;
+  if(online) m.online=online;
+  c.msgs.push(m); c.t=Date.now();
+  if(r==='u'&&c.title==='Chat nuevo'){ c.title=(t||'').slice(0,28); $('ctitle').textContent=c.title; }
+  bubble(m); msgs.scrollTop=msgs.scrollHeight; persist();
+}
+function lista(){ const L=$('list'); L.innerHTML='';
+  chats.slice().sort((a,b)=>b.t-a.t).forEach(c=>{
+    const row=document.createElement('div'); row.className='it'+(c.id===cur?' on':'');
+    const b=document.createElement('button'); b.className='t'; b.textContent='💬 '+c.title; b.onclick=()=>{ cur=c.id; persist(); render(); cerrar(); };
+    const e=document.createElement('button'); e.className='x'; e.textContent='✏️'; e.setAttribute('aria-label','Renombrar'); e.onclick=()=>{ const n=prompt('Nuevo nombre del chat:',c.title); if(n&&n.trim()){ c.title=n.trim().slice(0,40); persist(); lista(); if(c.id===cur) $('ctitle').textContent=c.title; } };
+    const d=document.createElement('button'); d.className='x'; d.textContent='🗑️'; d.setAttribute('aria-label','Borrar'); d.onclick=()=>{ if(!confirm('¿Borrar el chat "'+c.title+'"?')) return; chats=chats.filter(x=>x.id!==c.id); if(!chats.length) nuevo(); else if(c.id===cur) cur=chats[0].id; persist(); render(); lista(); };
+    row.appendChild(b); row.appendChild(e); row.appendChild(d); L.appendChild(row); }); }
+function abrir(){ lista(); document.body.classList.add('dopen'); }
+function cerrar(){ document.body.classList.remove('dopen'); }
+function crear(){ nuevo(); persist(); render(); cerrar(); inp.focus(); }
+const _lastPick=new WeakMap();
+const pick=a=>{ if(a.length<2) return a[0]; let i,l=_lastPick.get(a); do{ i=Math.floor(Math.random()*a.length); }while(i===l); _lastPick.set(a,i); return a[i]; };
+const AYUDA='Comandos:\n/ayuda · /aprender pregunta | respuesta\n/buscar texto · /lista · /olvidar pregunta\n/aprendido · /copiar · /nombre · /tema\n/respaldo · /restaurar · /guardar\n\n🛡️ ATLAS GUARD: filtros de seguridad activos (cuida, no castiga).\n✏️ Cambia textos tú mismo en el archivo personalizar.js\n\n🎨 Imágenes: las dibujo yo, sin internet y sin terceros.\n/imagenes auto|offline (auto usa IA en línea si hay servicio) · /clave\n\n«crea una imagen de un gato astronauta»\n«dibuja un atardecer en la playa»\n\nTemas: ciencia, deportes, películas, inglés\nCálculos: 15*4+(10/2), 15% de 200, raíz de 144\nMenú ☰ · 🌓 tema';
+function textoAprendido(){
+  const ks=Object.keys(aprendido); if(!ks.length) return '';
+  return 'Lo aprendido por ATLAS IA ('+ks.length+'):\n\n'+ks.map(k=>k+' | '+String(aprendido[k][0]).replace(/\s+/g,' ').trim()).join('\n');
+}
+function toast(msg){ let t=$('toast'); if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('show'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('show'),2200); }
+async function copiarAprendido(){
+  const txt=textoAprendido();
+  if(!txt){ toast('Aún no has enseñado nada 🧠'); return 0; }
+  let ok=false;
+  try{ if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(txt); ok=true; } }catch(e){}
+  if(!ok){ try{ const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,txt.length); ok=document.execCommand('copy'); ta.remove(); }catch(e){} }
+  const n=Object.keys(aprendido).length;
+  toast(ok?'📋 Copiado: '+n+(n===1?' cosa aprendida':' cosas aprendidas'):'No pude copiar 😕 Usa /aprendido y copia a mano');
+  return ok?n:-1;
+}
+function comando(raw){
+  const t=raw.trim(), l=t.toLowerCase();
+  if(l==='/ayuda'||l.startsWith('/ayuda ')){ const a=t.slice(7).trim();
+    if(esDueno()){ add('b',AYUDA); return true; }
+    if(a&&pinOk(a)){ try{ localStorage.setItem('atlas_dueno','1'); }catch(e){} refrescarDueno(); add('b','🔓 Listo, eres el dueño. Ya puedes usar /ayuda.\n\n'+AYUDA); return true; }
+    add('b',a?'🔒 Clave incorrecta.':'🔒 /ayuda es solo para el dueño de ATLAS IA.'); return true; }
+  if(l==='/bloquear'){ if(esDueno()){ try{ localStorage.removeItem('atlas_dueno'); }catch(e){} refrescarDueno(); add('b','🔒 /ayuda bloqueado de nuevo en este celular.'); } else add('b','Todavía no te he pedido la clave. 🙂'); return true; }
+  if(l.startsWith('/pin ')){ if(!esDueno()){ add('b','🔒 Solo el dueño puede cambiar la clave.'); return true; } const n=t.slice(5).trim(); if(n.length<6){ add('b','La clave nueva debe tener al menos 6 caracteres.'); return true; } try{ localStorage.setItem('atlas_pin_hash',sha256('atlas|'+n)); add('b','✅ Clave cambiada en este celular. Úsala con /ayuda tu_clave en otros dispositivos nuevos.'); }catch(e){ add('b','No pude guardar la clave.'); } return true; }
+  if(l==='/clave'||l.startsWith('/clave ')){ const k=t.slice(6).trim();
+    if(!k){ add('b',claveImg?'Tengo una clave guardada (termina en …'+claveImg.slice(-4)+'). Para quitarla: /clave borrar':'No hay clave guardada. Si el servicio de imágenes la pide, escribe /clave y tu clave (gratis en enter.pollinations.ai).'); }
+    else if(k.toLowerCase()==='borrar'){ claveImg=''; try{ localStorage.removeItem('atlas_img_key'); }catch(e){} add('b','Clave borrada 🧹'); }
+    else { claveImg=k; try{ localStorage.setItem('atlas_img_key',k); }catch(e){} add('b','Clave guardada 🔑 Ya puedes pedir imágenes en línea.'); }
+    return true; }
+  if(l==='/imagenes'||l.startsWith('/imagenes ')){ const a=l.slice(9).trim();
+    if(a==='offline'||a==='auto'){ modoImg=a; try{ localStorage.setItem('atlas_img_modo',a); }catch(e){} add('b',a==='auto'?'Modo automático 🌐: con internet creo imágenes con IA en línea; sin internet, las dibujo yo.':'Modo sin internet ✏️: siempre dibujo yo, aunque haya conexión.'); }
+    else add('b','Modo actual: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\nCámbialo con /imagenes auto o /imagenes offline'); return true; }
+  if(l==='/nombre'||l.startsWith('/nombre ')){ const a=t.slice(7).trim();
+    if(!a){ if(nombre) add('b','Te llamo '+nombre+'. Para cambiarlo escribe /nombre y tu nombre nuevo.'); else { chat().pending='__nombre__'; add('b','Aún no sé tu nombre. ¿Cómo te llamas?'); } }
+    else { const n=sacarNombre(a); if(n){ guardarNombre(n); chat().pending=null; add('b','¡Listo! Ahora te llamaré '+n+' 😊'); } else add('b','No te entendí 😅 Escribe /nombre y tu nombre.'); }
+    return true; }
+  if(l==='/copiar'){ copiarAprendido().then(n=>{ add('b',n>0?'📋 Copié lo aprendido ('+n+') al portapapeles. Pégalo donde quieras.':n===0?'Aún no me has enseñado nada. Usa /aprender pregunta | respuesta 🧠':'No pude copiar 😕 Prueba con /aprendido y copia el texto a mano.'); }); return true; }
+  if(l==='/aprendido'){ const ks=Object.keys(aprendido); add('b',ks.length?'Esto me enseñaste ('+ks.length+'):\n'+ks.map(k=>'• '+k+' → '+aprendido[k][0]).join('\n'):'Todavía no me has enseñado nada.'); return true; }
+  if(l==='/lista'){ add('b','Conozco '+Object.keys(saber).length+' temas. Algunos:\n'+Object.keys(saber).sort().slice(0,50).join('\n')); return true; }
+  if(l.startsWith('/buscar ')){ const k=buscar(limpiar(t.slice(8))); add('b',k?`[${k}] → ${pick(saber[k])}`:'No encontré nada.'); return true; }
+  if(l.startsWith('/aprender ')){ if(!esDueno()){ add('b','🔒 Solo el dueño de ATLAS IA puede enseñarme o borrar lo aprendido.'); return true; }  const c=t.slice(10);
+    if(!c.includes('|')) add('b','Usa /aprender pregunta | respuesta');
+    else { const i=c.indexOf('|'), q=limpiar(c.slice(0,i)), a=c.slice(i+1).trim();
+      if(q&&a){ aprendido[q]=[a]; saber[q]=[a]; guardar(); add('b','¡Aprendido y guardado! 🧠💾'); } else add('b','Necesito pregunta y respuesta.'); }
+    return true; }
+  if(l.startsWith('/olvidar ')){ if(!esDueno()){ add('b','🔒 Solo el dueño de ATLAS IA puede enseñarme o borrar lo aprendido.'); return true; }  const q=limpiar(t.slice(9));
+    if(aprendido[q]){ delete aprendido[q]; cargar(); guardar(); add('b','Aprendizaje borrado.'); }
+    else if(saber[q]) add('b','No se puede borrar un tema de la base inicial.');
+    else add('b','No encontré ese aprendizaje.');
+    return true; }
+  if(l==='/respaldo'){ hacerRespaldo(); add('b','💾 Respaldo listo. Guárdalo en un lugar seguro (o mándatelo por WhatsApp o correo). Para volver a cargarlo usa /restaurar.'); return true; }
+  if(l==='/restaurar'){ restaurarRespaldo(); return true; }
+  if(l==='/guardar'){ if(!esDueno()){ add('b','🔒 Solo el dueño puede enseñarme cosas.'); return true; }
+    if(!ultimaWiki){ add('b','No tengo nada reciente para guardar 🙂'); return true; }
+    aprendido[ultimaWiki.q]=[ultimaWiki.a]; saber[ultimaWiki.q]=[ultimaWiki.a]; guardar(); ultimaWiki=null; add('b','¡Guardado! Ahora lo sé sin internet ✅'); return true; }
+  if(l==='/exportar'){
+    const data = JSON.stringify({aprendido, nombre, fecha: new Date().toISOString()}, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'atlas-ia-backup.json';
+    a.click();
+    add('b','✅ Backup descargado (aprendido + nombre). Guárdalo en un lugar seguro.');
+    return true;
+  }
+  if(l==='/tema'){
+    const order = ['auto','light','dark'];
+    curTheme = order[(order.indexOf(curTheme)+1)%3];
+    applyTheme(curTheme);
+    add('b','Tema: '+(curTheme==='auto'?'Automático 🌓':curTheme==='light'?'Claro ☀️':'Oscuro 🌙'));
+    return true;
+  }
+  return false;
+}
+
+// ===== Generación de imágenes (solo online) =====
+function isOnline(){ return navigator.onLine; }
+
+function extractImagePrompt(raw){
+  const t = raw.trim();
+  const lower = t.toLowerCase();
+  // Patrones comunes en español
+  const patterns = [
+    /^(?:crea|creá|genera|generá|dibuja|dibujá|haz|hacé|make|draw|generate|create)\s+(?:una?\s+)?(?:imagen|foto|dibujo|ilustraci[oó]n|picture|image)?\s*(?:de|del|de la|of)?\s*(.+)$/i,
+    /^(?:quiero|necesito|me gustar[ií]a)\s+(?:una?\s+)?(?:imagen|foto|dibujo)\s+(?:de|del|de la)\s+(.+)$/i,
+    /^(?:imagen|foto|dibujo)\s+(?:de|del|de la)\s+(.+)$/i,
+    /^\/img\s+(.+)$/i,
+    /^\/imagen\s+(.+)$/i,
+  ];
+  for(const p of patterns){
+    const m = t.match(p);
+    if(m && m[1] && m[1].trim().length > 2) return m[1].trim();
+  }
+  // Si dice explícitamente "generar imagen" o similar al inicio
+  if(/^(crea|creá|genera|generá|dibuja|dibujá).{0,20}(imagen|foto|dibujo)/i.test(lower)){
+    const cleaned = t.replace(/^(crea|creá|genera|generá|dibuja|dibujá|haz|hacé)\s+/i,'').replace(/^(una?\s+)?(imagen|foto|dibujo|ilustraci[oó]n)\s*(de|del|de la)?\s*/i,'').trim();
+    if(cleaned.length > 2) return cleaned;
+  }
+  return null;
+}
+
+// ===== Dibujo propio: ATLAS IA dibuja con su propio código (sin internet, sin terceros) =====
+function rng(seed){ let a=seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+const COLORES={rojo:'#e53935',azul:'#1e88e5',verde:'#43a047',amarillo:'#fdd835',naranja:'#fb8c00',morado:'#8e24aa',violeta:'#8e24aa',rosa:'#f06292',negro:'#37474f',blanco:'#f5f5f5',gris:'#9e9e9e',cafe:'#8d6e63',marron:'#8d6e63',dorado:'#f9a825',plateado:'#b0bec5',celeste:'#4fc3f7'};
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const sh=(h,f)=>'#'+rgb(h).map(v=>Math.max(0,Math.min(255,Math.round(v*f))).toString(16).padStart(2,'0')).join('');
+const lum=h=>{ const c=rgb(h); return .3*c[0]+.59*c[1]+.11*c[2]; };
+const SUJ=[['gato',/\bgat/],['perro',/\b(perr|cachorr)/],['robot',/\brobot/],['casa',/\bcasa/],['arbol',/\barbol/],['coche',/\b(coche|carro|auto|autos)\b/],['pez',/\b(pez|peces)\b/],['barco',/\b(barco|velero)/],['flor',/\bflor/],['corazon',/\bcorazon/],['cohete',/\bcohete/],['planeta',/\bplaneta/],['mariposa',/\bmariposa/],['pajaro',/\bpajaro/],['estrella',/\bestrella/],['avion',/\b(avion|aviones)\b/],['conejo',/\bconej/],['tortuga',/\btortuga/],['hongo',/\b(hongo|champi)/],['oso',/\bos[oa]s?\b/],['manzana',/\bmanzana/],['helado',/\b(helado|paleta)/],['castillo',/\bcastillo/],['bicicleta',/\b(bicicleta|bici)\b/],['muneco',/\b(muneco|monigote)/]];
+function dibujar(cv,prompt,seed){
+  const W=512; cv.width=W; cv.height=W; const g=cv.getContext('2d'); const R=rng(seed||1);
+  const t=' '+limpiar(prompt)+' '; const has=r=>r.test(t);
+  const circ=(x,y,r,c)=>{ g.fillStyle=c; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); };
+  const ell=(x,y,rx,ry,c,rot)=>{ g.fillStyle=c; g.beginPath(); g.ellipse(x,y,rx,ry,rot||0,0,7); g.fill(); };
+  const rect=(x,y,w,h,c,r)=>{ g.fillStyle=c; g.beginPath(); if(r&&g.roundRect) g.roundRect(x,y,w,h,r); else g.rect(x,y,w,h); g.fill(); };
+  const poly=(p,c)=>{ g.fillStyle=c; g.beginPath(); p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.closePath(); g.fill(); };
+  const line=(a,b,c2,d,e,w)=>{ g.strokeStyle=e; g.lineWidth=w||3; g.lineCap='round'; g.beginPath(); g.moveTo(a,b); g.lineTo(c2,d); g.stroke(); };
+  // ---- qué pidió ----
+  let col=null; for(const k in COLORES) if(has(new RegExp('\\b'+k+'s?\\b'))){ col=COLORES[k]; break; }
+  const astro=has(/\bastronaut/);
+  const espacio=astro||has(/\b(espacio|galaxia|cohete|planeta|universo)/);
+  const atard=has(/\b(atardecer|ocaso|amanecer|puesta de sol)/);
+  const noche=!espacio&&has(/\b(noche|luna|nocturn|estrella)/);
+  const playa=has(/\b(playa|mar|oceano|ola|olas)\b/);
+  const montes=has(/\bmonta/), ciudad=has(/\b(ciudad|edificio|rascacielo)/), bosque=has(/\b(bosque|selva)/), nubes=has(/\bnub/);
+  const solpide=has(/\bsol\b/);
+  let sujetos=[]; for(const [n,r] of SUJ){ const m=t.match(r); if(m) sujetos.push([m.index,n]); }
+  sujetos=sujetos.sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,3);
+  const acuatico=n=>n==='pez'||n==='barco';
+  const mar=playa||sujetos.some(acuatico);
+  const hayEscena=espacio||atard||noche||mar||montes||ciudad||bosque||nubes||solpide;
+  const conocido=sujetos.length>0||hayEscena;
+  if(!conocido){ // arte abstracto
+    const h=Math.floor(R()*360); const gr=g.createLinearGradient(0,0,W,W); gr.addColorStop(0,`hsl(${h},70%,25%)`); gr.addColorStop(1,`hsl(${(h+60)%360},70%,55%)`); g.fillStyle=gr; g.fillRect(0,0,W,W);
+    for(let i=0;i<26;i++){ g.globalAlpha=.25+R()*.4; circ(R()*W,R()*W,10+R()*70,`hsl(${(h+R()*160)%360},80%,${50+R()*30}%)`); }
+    g.globalAlpha=.5; for(let i=0;i<10;i++) line(R()*W,R()*W,R()*W,R()*W,'#fff',1+R()*3); g.globalAlpha=1;
+    return {conocido:false};
+  }
+  // ---- cielo ----
+  const grad=(a,b,c2)=>{ const gr=g.createLinearGradient(0,0,0,360); gr.addColorStop(0,a); if(c2){ gr.addColorStop(.55,b); gr.addColorStop(1,c2); } else gr.addColorStop(1,b); g.fillStyle=gr; g.fillRect(0,0,W,W); };
+  const oscuro=espacio||noche;
+  if(espacio) grad('#050816','#1b1147'); else if(noche) grad('#0b1d3a','#2b4a7a'); else if(atard) grad('#3b2a6b','#ff7e5f','#feb47b'); else grad('#4aa3e8','#bfe6ff');
+  if(oscuro){ for(let i=0;i<(espacio?110:70);i++){ g.globalAlpha=.4+R()*.6; circ(R()*W,R()*330,.6+R()*1.8,'#fff'); } g.globalAlpha=1; }
+  if(noche){ circ(410,90,34,'#fff8e1'); circ(398,80,7,'#f0e6c8'); circ(424,100,5,'#f0e6c8'); circ(420,72,4,'#f0e6c8'); }
+  else if(atard){ circ(256,335,70,'rgba(255,204,128,.45)'); circ(256,335,52,'#ffd180'); }
+  else if(!espacio){ const gl=g.createRadialGradient(400,90,10,400,90,90); gl.addColorStop(0,'rgba(255,236,150,.9)'); gl.addColorStop(1,'rgba(255,236,150,0)'); g.fillStyle=gl; g.fillRect(300,0,212,200); circ(400,90,36,'#ffd54f'); }
+  const nube=(x,y,s)=>{ g.globalAlpha=.92; [[0,0,26],[28,-10,32],[60,0,26],[30,8,26]].forEach(a=>circ(x+a[0]*s,y+a[1]*s,a[2]*s,'#fff')); g.globalAlpha=1; };
+  if(!oscuro&&!atard){ nube(60,80,1); nube(250,50,.8); if(nubes){ nube(150,150,.7); nube(330,140,.9); } }
+  if(atard){ g.globalAlpha=.5; nube(70,100,1); nube(330,70,.8); g.globalAlpha=1; }
+  if(espacio&&!sujetos.includes('planeta')){ circ(90,90,34,'#7e57c2'); g.strokeStyle='rgba(206,147,216,.8)'; g.lineWidth=5; g.beginPath(); g.ellipse(90,90,56,12,-.4,0,7); g.stroke(); }
+  // ---- fondo y suelo ----
+  let baseY=440;
+  if(montes){ poly([[-20,345],[110,180],[240,345]],'#78909c'); poly([[150,345],[300,150],[470,345]],'#607d8b'); poly([[330,345],[440,215],[560,345]],'#78909c'); poly([[300,150],[270,192],[290,184],[305,200],[322,186],[338,196]],'#fff'); poly([[110,180],[90,208],[108,200],[122,210]],'#fff'); }
+  if(ciudad){ for(let x=-10;x<W;x+=46){ const w=36+R()*26,h=90+R()*150; rect(x,345-h,w,h+10,R()<.5?'#37474f':'#455a64'); for(let y=345-h+10;y<335;y+=18) for(let xx=x+7;xx<x+w-8;xx+=14) if(R()<.55) rect(xx,y,7,9,oscuro||atard?'#ffe082':'#90caf9'); } }
+  if(mar){ const sg=g.createLinearGradient(0,335,0,W); sg.addColorStop(0,'#4fb3e8'); sg.addColorStop(1,'#1565a8'); g.fillStyle=sg; g.fillRect(0,335,W,W-335); g.globalAlpha=.5; for(let i=0;i<14;i++){ const x=R()*W,y=350+R()*80; line(x,y,x+30,y,'#fff',2); } g.globalAlpha=1;
+    if(sujetos.some(n=>!acuatico(n))||playa){ g.fillStyle='#f2d49b'; g.beginPath(); g.moveTo(0,440); for(let x=0;x<=W;x+=32) g.quadraticCurveTo(x+16,430+((x/32)%2?8:-2),x+32,440); g.lineTo(W,W); g.lineTo(0,W); g.fill(); baseY=474; } }
+  else if(ciudad){ rect(0,400,W,W-400,'#607d8b'); rect(0,400,W,6,'#78909c'); baseY=455; }
+  else if(espacio){ ell(256,610,430,200,'#9e9e9e'); ell(130,455,34,9,'#8a8a8a'); ell(380,480,44,11,'#8a8a8a'); ell(300,430,20,6,'#8a8a8a'); baseY=440; }
+  else { ell(100,400,240,80,'#74c862'); ell(420,405,270,85,'#69bd57'); rect(0,395,W,W-395,'#5fae4f'); if(!montes&&!bosque&&!atard){ const hh=g.createLinearGradient(0,340,0,400); } baseY=450;
+    for(let i=0;i<26;i++){ const x=R()*W,y=410+R()*100; line(x,y,x-3,y-9,'#4a9a3d',2); line(x,y,x+3,y-9,'#4a9a3d',2); } }
+  const arbolC=(x,y,s,c2)=>{ rect(x-5*s,y-35*s,10*s,35*s,'#795548'); circ(x,y-52*s,24*s,c2); circ(x-15*s,y-40*s,16*s,sh(c2,.9)); circ(x+15*s,y-40*s,16*s,sh(c2,.9)); };
+  if(bosque){ for(let i=0;i<9;i++) arbolC(20+i*58+R()*20,392+R()*20,.8+R()*.5,R()<.5?'#2e7d32':'#388e3c'); }
+  if(oscuro||atard){ g.fillStyle=oscuro?'rgba(0,0,40,.38)':'rgba(120,40,20,.22)'; g.fillRect(0,335,W,W-335); }
+  // ---- sujetos ----
+  const D={
+    gato(c){ c=c||['#f4a261','#9e9e9e','#455a64','#e0e0e0'][Math.floor(R()*4)]; g.strokeStyle=c; g.lineWidth=12; g.lineCap='round'; g.beginPath(); g.moveTo(40,-30); g.quadraticCurveTo(88,-38,70,-96); g.stroke();
+      ell(0,-45,42,34,c); ell(-22,-8,13,8,c); ell(22,-8,13,8,c); ell(0,-95,32,28,c); poly([[-30,-105],[-24,-142],[-8,-118]],c); poly([[30,-105],[24,-142],[8,-118]],c); poly([[-26,-112],[-23,-131],[-14,-117]],'#f8bbd0'); poly([[26,-112],[23,-131],[14,-117]],'#f8bbd0');
+      circ(-12,-98,6,'#fff'); circ(12,-98,6,'#fff'); circ(-12,-98,3,'#222'); circ(12,-98,3,'#222'); poly([[-4,-89],[4,-89],[0,-84]],'#f06292');
+      const w=lum(c)<110?'#ddd':'#444'; line(-10,-85,-36,-91,w,1.5); line(-10,-82,-36,-80,w,1.5); line(10,-85,36,-91,w,1.5); line(10,-82,36,-80,w,1.5); return [0,-95,46]; },
+    perro(c){ c=c||['#b5835a','#d7b98e','#6d4c41','#eeeeee'][Math.floor(R()*4)]; g.strokeStyle=c; g.lineWidth=11; g.lineCap='round'; g.beginPath(); g.moveTo(42,-52); g.quadraticCurveTo(80,-62,68,-98); g.stroke();
+      ell(0,-48,46,32,c); rect(-36,-26,15,26,c,6); rect(21,-26,15,26,c,6); ell(0,-100,32,28,c); ell(-31,-98,11,24,sh(c,.7),.3); ell(31,-98,11,24,sh(c,.7),-.3);
+      ell(0,-88,17,13,'#f5e6d3'); circ(0,-93,5,'#222'); circ(-12,-107,4,'#222'); circ(12,-107,4,'#222'); ell(0,-74,5,8,'#f06292'); return [0,-100,46]; },
+    robot(c){ c=c||'#90a4ae'; rect(-28,-34,18,34,sh(c,.7),4); rect(10,-34,18,34,sh(c,.7),4); rect(-62,-98,18,52,sh(c,.8),8); rect(44,-98,18,52,sh(c,.8),8); rect(-40,-102,80,70,c,10); rect(-24,-90,48,30,'#37474f',6);
+      circ(-12,-75,5,'#ef5350'); circ(0,-75,5,'#ffee58'); circ(12,-75,5,'#66bb6a'); rect(-8,-114,16,14,sh(c,.6)); line(0,-162,0,-184,sh(c,.6),4); circ(0,-188,6,'#ef5350');
+      rect(-30,-164,60,52,c,12); circ(-12,-140,9,'#fff'); circ(12,-140,9,'#fff'); circ(-12,-140,4.5,'#1565c0'); circ(12,-140,4.5,'#1565c0'); rect(-15,-124,30,6,'#37474f',3); return [0,-138,50]; },
+    casa(c){ rect(-60,-90,120,90,c||'#ffe0b2'); rect(30,-142,16,40,'#8d6e63'); poly([[-78,-90],[0,-152],[78,-90]],'#c0392b'); rect(-14,-54,28,54,'#6d4c41',4); circ(8,-27,3,'#ffd54f');
+      [[-48,-74],[22,-74]].forEach(p=>{ rect(p[0],p[1],26,26,'#81d4fa',3); line(p[0]+13,p[1],p[0]+13,p[1]+26,'#fff',2); line(p[0],p[1]+13,p[0]+26,p[1]+13,'#fff',2); }); },
+    arbol(c){ c=c||'#43a047'; rect(-11,-72,22,72,'#795548'); circ(0,-102,44,c); circ(-32,-82,30,sh(c,.9)); circ(32,-82,30,sh(c,.9)); circ(0,-134,30,sh(c,1.08)); },
+    coche(c){ c=c||'#e53935'; rect(-72,-52,144,34,c,10); poly([[-42,-52],[-28,-86],[30,-86],[50,-52]],c); poly([[-34,-54],[-23,-79],[-3,-79],[-3,-54]],'#b3e5fc'); poly([[4,-54],[4,-79],[26,-79],[42,-54]],'#b3e5fc'); circ(-42,-18,18,'#212121'); circ(-42,-18,8,'#bdbdbd'); circ(42,-18,18,'#212121'); circ(42,-18,8,'#bdbdbd'); circ(68,-40,5,'#fff59d'); },
+    pez(c){ c=c||'#ff9800'; poly([[30,0],[64,-26],[64,26]],sh(c,.85)); ell(0,0,42,25,c); poly([[-6,-22],[10,-42],[20,-20]],sh(c,.85)); circ(-22,-5,6,'#fff'); circ(-23,-5,3,'#222'); line(0,-22,0,22,'rgba(255,255,255,.5)',5); circ(-58,-22,5,'rgba(255,255,255,.7)'); circ(-68,-40,3.5,'rgba(255,255,255,.7)'); },
+    barco(c){ poly([[-72,-20],[72,-20],[50,12],[-50,12]],'#6d4c41'); rect(-3,-124,6,104,'#4e342e'); poly([[8,-120],[8,-30],[58,-30]],'#fafafa'); poly([[-8,-108],[-8,-30],[-52,-30]],c||'#ef5350'); poly([[0,-124],[24,-116],[0,-108]],'#fdd835'); },
+    flor(c){ c=c||'#ec407a'; line(0,0,0,-92,'#2e7d32',6); ell(-15,-40,15,6,'#43a047',-.5); ell(15,-56,15,6,'#43a047',.5); for(let i=0;i<8;i++){ const a=i*Math.PI/4; circ(Math.cos(a)*21,-102+Math.sin(a)*21,14,c); } circ(0,-102,12,'#fdd835'); },
+    corazon(c){ c=c||'#e53935'; g.fillStyle=c; g.beginPath(); g.moveTo(0,42); g.bezierCurveTo(-76,-6,-42,-58,0,-22); g.bezierCurveTo(42,-58,76,-6,0,42); g.fill(); ell(-24,-24,11,6,'rgba(255,255,255,.5)',-.6); },
+    cohete(c){ c=c||'#eceff1'; poly([[-26,-34],[-52,0],[-26,-8]],'#e53935'); poly([[26,-34],[52,0],[26,-8]],'#e53935'); poly([[-14,-20],[14,-20],[0,32]],'#ff9800'); poly([[-8,-20],[8,-20],[0,14]],'#fdd835');
+      g.fillStyle=c; g.beginPath(); g.moveTo(0,-176); g.bezierCurveTo(42,-136,34,-44,26,-20); g.lineTo(-26,-20); g.bezierCurveTo(-34,-44,-42,-136,0,-176); g.fill(); poly([[0,-176],[-19,-146],[19,-146]],'#e53935'); circ(0,-106,18,'#90a4ae'); circ(0,-106,14,'#4fc3f7'); },
+    planeta(c){ c=c||'#ff8a65'; circ(0,0,50,c); g.save(); g.beginPath(); g.arc(0,0,50,0,7); g.clip(); ell(0,-14,60,6,sh(c,.85)); ell(0,14,60,8,sh(c,1.1)); g.restore(); g.strokeStyle='rgba(255,224,178,.95)'; g.lineWidth=8; g.beginPath(); g.ellipse(0,0,82,18,-.4,0,7); g.stroke(); },
+    mariposa(c){ c=c||'#ab47bc'; ell(-28,-14,26,32,c,-.5); ell(28,-14,26,32,c,.5); ell(-22,24,18,22,sh(c,.8),.5); ell(22,24,18,22,sh(c,.8),-.5); circ(-30,-16,8,'rgba(255,255,255,.6)'); circ(30,-16,8,'rgba(255,255,255,.6)'); ell(0,2,5,32,'#37474f'); line(0,-30,-10,-50,'#37474f',2); line(0,-30,10,-50,'#37474f',2); },
+    pajaro(c){ g.strokeStyle=c||'#37474f'; g.lineWidth=6; g.lineCap='round'; g.beginPath(); g.moveTo(-40,0); g.quadraticCurveTo(-20,-30,0,0); g.quadraticCurveTo(20,-30,40,0); g.stroke(); },
+    estrella(c){ c=c||'#ffd600'; const pts=[]; for(let k=0;k<10;k++){ const a=-Math.PI/2+k*Math.PI/5, r=k%2?22:52; pts.push([Math.cos(a)*r,Math.sin(a)*r]); } poly(pts,c); circ(-10,-4,4,'#222'); circ(10,-4,4,'#222'); line(-7,10,7,10,'#222',2.5); },
+    avion(c){ c=c||'#eceff1'; poly([[-52,-4],[-74,-40],[-56,-40],[-30,-4]],sh(c,.8)); ell(0,0,62,15,c); poly([[-6,2],[-36,34],[-14,34],[24,2]],sh(c,.7)); poly([[-6,-2],[-30,-30],[-14,-30],[20,-2]],sh(c,.85)); circ(46,-2,8,'#81d4fa'); [-28,-12,4,20].forEach(x=>circ(x,-3,3.5,'#81d4fa')); rect(-40,3,86,3,'#e53935'); },
+    conejo(c){ c=c||'#f5f5f5'; ell(-2,-34,36,30,c); circ(-36,-34,11,'#ffffff'); ell(14,-5,16,7,sh(c,.9)); ell(-16,-5,16,7,sh(c,.9)); ell(14,-80,24,21,c); ell(6,-124,8,26,c,.15); ell(26,-124,8,26,c,-.15); ell(6,-124,4,18,'#f8bbd0',.15); ell(26,-124,4,18,'#f8bbd0',-.15); circ(24,-84,3.5,'#222'); circ(36,-76,3.5,'#f06292'); line(36,-73,36,-68,'#444',1.5); return [14,-80,30]; },
+    tortuga(c){ c=c||'#558b2f'; ell(-34,-6,13,8,'#9ccc65'); ell(22,-6,13,8,'#9ccc65'); poly([[-52,-26],[-70,-20],[-52,-18]],'#9ccc65'); ell(58,-28,15,13,'#9ccc65'); circ(63,-31,3,'#222'); ell(0,-30,54,34,c); ell(0,-14,54,12,sh(c,.7)); [[-24,-38],[0,-44],[24,-38],[-12,-22],[12,-22]].forEach(p=>circ(p[0],p[1],8,sh(c,1.25))); },
+    hongo(c){ c=c||'#e53935'; rect(-14,-56,28,56,'#fff3e0',8); ell(0,-62,54,36,c); circ(-22,-74,8,'#fff'); circ(10,-86,9,'#fff'); circ(30,-68,7,'#fff'); circ(-4,-60,5,'#fff'); circ(-8,-30,2.5,'#222'); circ(8,-30,2.5,'#222'); },
+    oso(c){ c=c||['#8d6e63','#6d4c41','#bcaaa4'][Math.floor(R()*3)]; ell(-44,-50,12,22,c,.3); ell(44,-50,12,22,c,-.3); ell(0,-48,44,38,c); ell(0,-44,26,24,'#d7ccc8'); ell(-24,-8,14,10,c); ell(24,-8,14,10,c);
+      circ(-26,-132,12,c); circ(26,-132,12,c); circ(-26,-132,6,'#d7ccc8'); circ(26,-132,6,'#d7ccc8'); ell(0,-104,34,30,c); ell(0,-94,16,12,'#d7ccc8'); ell(0,-99,6,4,'#222'); circ(-12,-110,4,'#222'); circ(12,-110,4,'#222'); line(0,-95,0,-89,'#222',2); return [0,-104,40]; },
+    manzana(c){ c=c||'#e53935'; circ(-18,-40,38,c); circ(18,-40,38,c); rect(-18,-80,36,30,c,12); line(0,-76,3,-102,'#5d4037',5); ell(16,-92,16,7,'#43a047',-.5); ell(-26,-52,7,14,'rgba(255,255,255,.4)',.3); },
+    helado(c){ c=c||'#fff176'; poly([[-30,-84],[30,-84],[0,0]],'#e0a458'); line(-20,-76,12,-22,'#c98a3a',2); line(0,-80,18,-44,'#c98a3a',2); line(20,-76,-12,-22,'#c98a3a',2); line(0,-80,-18,-44,'#c98a3a',2);
+      circ(0,-96,34,'#f48fb1'); ell(-26,-82,10,14,'#f48fb1'); ell(24,-82,9,12,'#f48fb1'); circ(0,-130,29,c); circ(0,-160,9,'#e53935'); line(0,-168,10,-186,'#5d4037',3); ell(-10,-140,7,10,'rgba(255,255,255,.45)',.4); },
+    castillo(c){ c=c||'#bdbdbd'; rect(-80,-80,160,80,c); for(let i=0;i<6;i++) rect(-80+i*28,-94,18,14,c); rect(-96,-130,44,130,sh(c,.85)); rect(52,-130,44,130,sh(c,.85));
+      poly([[-104,-130],[-74,-178],[-44,-130]],'#7e57c2'); poly([[44,-130],[74,-178],[104,-130]],'#7e57c2'); line(-74,-178,-74,-204,'#4e342e',3); poly([[-74,-204],[-74,-192],[-54,-198]],'#e53935');
+      rect(-18,-52,36,52,'#5d4037',16); rect(-80,-108,12,18,'#263238',3); rect(68,-108,12,18,'#263238',3); rect(-40,-64,12,16,'#263238',3); rect(28,-64,12,16,'#263238',3); },
+    bicicleta(c){ c=c||'#e53935'; g.strokeStyle='#37474f'; g.lineWidth=6; [-48,48].forEach(x=>{ g.beginPath(); g.arc(x,-30,30,0,7); g.stroke(); circ(x,-30,4,'#90a4ae'); });
+      line(-48,-30,-22,-76,c,5); line(-22,-76,34,-72,c,5); line(34,-72,48,-30,c,5); line(-48,-30,-6,-30,c,5); line(-6,-30,-22,-76,c,5); line(-6,-30,34,-72,c,5);
+      line(34,-72,30,-92,'#37474f',5); line(20,-92,42,-92,'#222',6); line(-34,-80,-12,-80,'#222',7); circ(-6,-30,7,'#90a4ae'); },
+    muneco(c){ circ(0,-30,38,'#fff'); circ(0,-86,28,'#fff'); circ(0,-130,22,'#fff'); line(-26,-92,-64,-114,'#5d4037',4); line(26,-92,64,-114,'#5d4037',4); rect(-22,-112,44,8,c||'#e53935',4);
+      rect(-18,-170,36,26,'#212121',2); rect(-28,-148,56,6,'#212121',2); circ(-8,-134,2.6,'#222'); circ(8,-134,2.6,'#222'); poly([[0,-130],[24,-126],[0,-122]],'#ff7043'); circ(0,-92,3,'#222'); circ(0,-80,3,'#222'); circ(0,-34,3,'#222'); return [0,-130,24]; },
+  };
+  const n=sujetos.length, xs=n===1?[256]:n===2?[160,352]:[100,256,412], esc=n===1?1.5:n===2?1.12:.86;
+  sujetos.forEach((nm,i)=>{
+    let y=baseY, s=esc, flota=false;
+    if(nm==='pez'){ y=395+i*10; } else if(nm==='barco'){ y=352; } else if(nm==='corazon'||nm==='planeta'||nm==='mariposa'||nm==='pajaro'||nm==='estrella'||nm==='avion'){ y=230; flota=true; s=esc*(nm==='planeta'?.9:1); }
+    else if(nm==='cohete'&&espacio){ y=360; }
+    g.save(); g.translate(xs[i],y); g.scale(s,s);
+    if(flota) g.translate(0,Math.sin(i+R())*10);
+    if(nm==='cohete'&&espacio) g.rotate(.18);
+    if(!oscuro&&!flota&&!acuatico(nm)){ g.globalAlpha=.18; ell(0,2,52,8,'#000'); g.globalAlpha=1; }
+    const cab=D[nm](col); // cabeza para el casco
+    if(astro&&cab){ g.fillStyle='rgba(190,225,255,.30)'; g.beginPath(); g.arc(cab[0],cab[1],cab[2],0,7); g.fill(); g.strokeStyle='#eceff1'; g.lineWidth=6; g.stroke(); g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=3; g.beginPath(); g.arc(cab[0],cab[1],cab[2]-9,3.6,4.5); g.stroke(); }
+    g.restore();
+  });
+  return {conocido:true};
+}
+
+// ===== Imágenes en línea (mejor calidad) con respaldo sin internet =====
+let claveImg=''; try{ claveImg=localStorage.getItem('atlas_img_key')||''; }catch(e){}
+let modoImg='offline'; try{ modoImg=localStorage.getItem('atlas_img_modo')||'offline'; }catch(e){}
+function urlOnline(prompt,seed,conClave){
+  const q='?model=flux&width=768&height=768&nologo=true&enhance=true&seed='+seed;
+  const p=encodeURIComponent(prompt.slice(0,400));
+  if(claveImg && conClave) return 'https://gen.pollinations.ai/image/'+p+q+'&key='+encodeURIComponent(claveImg);
+  return 'https://image.pollinations.ai/prompt/'+p+q;
+}
+function pedirImagenOnline(prompt,seed){
+  return new Promise((ok,fail)=>{
+    const img=new Image(); let fin=false;
+    const t=setTimeout(()=>{ if(!fin){ fin=true; img.src=''; fail(new Error('tiempo')); } },45000);
+    img.onload=()=>{ if(fin) return; fin=true; clearTimeout(t); ok(img); };
+    img.onerror=()=>{ if(fin) return; fin=true; clearTimeout(t); fail(new Error('error')); };
+    img.src=urlOnline(prompt,seed,true);
+  });
+}
+function cargarOnline(box,o){
+  box.textContent='🎨 Cargando imagen…';
+  pedirImagenOnline(o.p,o.s).then(img=>{
+    box.textContent=''; img.alt=o.p; box.appendChild(img);
+    img.onclick=async()=>{ try{ const r=await fetch(img.src); const b=await r.blob(); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='atlas-ia-imagen.png'; document.body.appendChild(a); a.click(); a.remove(); toast('🖼️ Imagen guardada'); }catch(e){ window.open(img.src,'_blank'); } };
+  }).catch(()=>{
+    box.textContent='';
+    const cv=document.createElement('canvas'); cv.className='dib'; box.appendChild(cv);
+    try{ dibujar(cv,o.p,o.s); }catch(e){ cv.replaceWith(document.createTextNode('(No pude mostrar esta imagen)')); }
+  });
+}
+function dibujarOffline(prompt){
+  const seed=(Date.now()%1000000)+1;
+  let ok=true; try{ ok=dibujar(document.createElement('canvas'),prompt,seed).conocido; }catch(e){ add('b','No pude dibujar eso 😕 Prueba con otra cosa.'); return; }
+  if(ok) add('b','Listo ✨ (dibujado por ATLAS IA, sin internet)',null,'Toca el dibujo para guardarlo',{p:prompt,s:seed});
+  else add('b','Eso no lo sé dibujar todavía, así que hice arte abstracto 🎨\nPrueba con: gato, perro, robot, casa, árbol, coche, pez, barco, flor, corazón, cohete, planeta, mariposa, pájaro, estrella, avión, conejo, tortuga, hongo, oso, manzana, helado, castillo, bicicleta, muñeco de nieve.\nY escenas: playa, montañas, ciudad, bosque, noche, atardecer, espacio.\nEj: «dibuja un gato astronauta en el espacio»',null,'Toca el dibujo para guardarlo',{p:prompt,s:seed});
+}
+function generarImagen(raw){
+  const prompt = extractImagePrompt(raw);
+  if(!prompt) return false;
+  const corto=prompt.slice(0,80)+(prompt.length>80?'…':'');
+  if(modoImg==='offline'||!navigator.onLine){
+    add('b','🎨 Dibujando…\n«'+corto+'»');
+    setTimeout(()=>dibujarOffline(prompt),500);
+    return true;
+  }
+  const chatId=cur, seed=(Date.now()%1000000)+1;
+  add('b','🎨 Creando imagen con IA en línea…\n«'+corto+'»');
+  pedirImagenOnline(prompt,seed).then(()=>{
+    const c=chats.find(x=>x.id===chatId); if(!c) return;
+    const prev=cur; cur=chatId;
+    add('b','Listo ✨ (imagen creada con IA en línea)',null,'Toca la imagen para guardarla',null,{p:prompt,s:seed});
+    if(prev!==chatId && chats.find(x=>x.id===prev)) cur=prev;
+    persist();
+  }).catch(()=>{
+    const c=chats.find(x=>x.id===chatId); if(!c) return;
+    const prev=cur; cur=chatId;
+    add('b','No pude conectar con el servicio de imágenes en línea 😕 (puede estar saturado o pedir clave: usa /clave). Te hago un dibujo sin internet:');
+    dibujarOffline(prompt);
+    if(prev!==chatId && chats.find(x=>x.id===prev)) cur=prev;
+    persist();
+  });
+  return true;
+}
+
+function go(){
+  const raw=inp.value.trim(); if(!raw) return;
+  inp.value=''; inp.style.height='auto'; add('u',raw);
+  const c=chat();
+  if(c.pending==='__nombre__'&&!raw.startsWith('/')){ const n=sacarNombre(raw);
+    if(n){ guardarNombre(n); c.pending=null; add('b','¡Mucho gusto, '+n+'! 😊 Desde ahora te saludaré así en cada chat nuevo. '+(esDueno()?'Escribe /ayuda para ver qué puedo hacer.':'Pregúntame lo que quieras.')); }
+    else add('b','No te entendí 😅 Escribe solo tu nombre, por favor.');
+    return; }
+  if(c.pending&&c.pending!=='__nombre__'&&!raw.startsWith('/')){ const q=c.pending; c.pending=null;
+    if(limpiar(raw)==='saltar'){ add('b','Ok, la dejamos así 👍'); return; }
+    aprendido[q]=[raw]; saber[q]=[raw]; guardar(); add('b','¡Aprendido y guardado! ✅'); return; }
+  if(c.pending!=='__nombre__') c.pending=null;
+  { const gd=atlasGuard(raw); if(gd){ add('b',gd); return; } }
+  if(comando(raw)) return;
+  const r=calcular(raw); if(r){ add('b',r); return; }
+  if(generarImagen(raw)) return;
+  const t=limpiar(raw);
+  if(!saber[t]){ const en=ingles(raw); if(en){ add('b',en); return; } }
+  const k=buscar(t);
+  if(k){ add('b',pick(saber[k])); return; }
+  if(navigator.onLine&&preguntaWiki(raw)){ wikiResponder(raw,t); return; }
+  sinRespuesta(t);
+}
+$('send').onclick=go;
+inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); go(); } });
+inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,120)+'px'; });
+$('menu').onclick=abrir; $('ov').onclick=cerrar; $('newc').onclick=crear; $('newb').onclick=crear;
+$('copyl').onclick=e=>{ e.preventDefault(); copiarAprendido(); };
+// ===== v5.9: respaldo de lo aprendido + búsqueda en Wikipedia (solo cuando hay internet) =====
+function nAprendido(){ return Object.keys(aprendido).length; }
+let _avisoResp=false;
+function avisoResp(){ if(_avisoResp) return; let u=0; try{ u=parseInt(localStorage.getItem('atlas_resp_n')||'0',10)||0; }catch(e){}
+  if(nAprendido()-u>=5){ _avisoResp=true; toast('💡 Tienes cosas nuevas sin respaldar. Toca 💾 Respaldo'); } }
+function hacerRespaldo(){
+  const n=nAprendido();
+  const data=JSON.stringify({app:'atlas-ia',version:APP_VERSION,aprendido,nombre,fecha:new Date().toISOString()},null,2);
+  try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download='atlas-ia-respaldo.json'; document.body.appendChild(a); a.click(); a.remove(); }
+  catch(e){ toast('No pude crear el respaldo 😕'); return; }
+  try{ localStorage.setItem('atlas_resp_n',String(n)); }catch(e){}
+  _avisoResp=false; toast('💾 Respaldo guardado ('+n+(n===1?' cosa aprendida)':' cosas aprendidas)'));
+}
+function restaurarRespaldo(){
+  const fi=document.createElement('input'); fi.type='file'; fi.accept='.json,application/json';
+  fi.onchange=()=>{ const f=fi.files&&fi.files[0]; if(!f) return;
+    if(f.size>5e6){ toast('Ese archivo es muy grande 😕'); return; }
+    const r=new FileReader();
+    r.onload=()=>{ try{
+      const d=JSON.parse(r.result); const ap=d&&d.aprendido;
+      if(!ap||typeof ap!=='object'||Array.isArray(ap)) throw 0;
+      let n=0;
+      for(const k of Object.keys(ap).slice(0,5000)){
+        const v=ap[k]; const arr=(Array.isArray(v)?v:[v]).filter(x=>typeof x==='string'&&x.length<=2000).slice(0,10);
+        const kk=limpiar(k).slice(0,300); if(!arr.length||!kk) continue;
+        aprendido[kk]=arr; saber[kk]=arr.slice(); n++; }
+      if(typeof d.nombre==='string'&&d.nombre.trim()&&!nombre) guardarNombre(d.nombre.trim().slice(0,40));
+      guardar(); try{ localStorage.setItem('atlas_resp_n',String(nAprendido())); }catch(e){}
+      add('b','✅ Respaldo restaurado: '+n+(n===1?' cosa aprendida. 🧠':' cosas aprendidas. 🧠'));
+    }catch(e){ add('b','Ese archivo no parece un respaldo de ATLAS IA 😕'); } };
+    r.readAsText(f); };
+  fi.click();
+}
+$('respl').onclick=e=>{ e.preventDefault(); hacerRespaldo(); };
+$('restl').onclick=e=>{ e.preventDefault(); restaurarRespaldo(); };
+
+
+// ===== ATLAS GUARD (ligero): cuidar a las personas sin castigar =====
+const G_ADULTO=/\b(porno\w*|pornografia|xxx|hentai|erotic\w*|desnud[oa]s?|nudes?|sexting)\b/;
+const G_PELIGRO=/\b(como (hacer|fabricar|construir|armar) (una |un )?(bomba|explosivos?|arma casera|veneno)|bomba casera|fabricar (drogas?|metanfetamina)|hackear (cuentas?|a alguien)|robar (cuentas?|contrasenas?))\b/;
+const G_APOYO=/\b(me quiero (matar|morir|cortar|hacer dano)|quiero (morir|morirme|suicidarme)|me voy a (matar|suicidar)|no quiero (seguir viviendo|vivir mas|estar vivo|estar viva)|quiero hacerme dano|me estoy cortando)\b/;
+function atlasGuard(raw){
+  if(raw.trim()[0]==='/') return '';
+  const s=limpiar(raw);
+  if(G_APOYO.test(s)) return 'Siento mucho que te sientas así 💙 No estás solo/a. Cuéntale hoy mismo a una persona de confianza (mamá, papá, un familiar, un profe o un amigo) cómo te sientes. Si estás en peligro o piensas hacerte daño ahora, llama al número de emergencias de tu país o pídele a un adulto que se quede contigo. Yo soy una app sencilla y no puedo reemplazar a una persona, pero si quieres, aquí sigo para hablar de otras cosas.';
+  if(G_ADULTO.test(s)) return '🛡️ Eso no es algo con lo que pueda ayudar. Pregúntame otra cosa, por ejemplo ciencia, deportes, cálculos o un dibujo 🙂';
+  if(G_PELIGRO.test(s)) return '🛡️ Eso podría ser peligroso, así que no te puedo ayudar con eso. Si tienes curiosidad, pregúntame de forma segura, por ejemplo «qué es la química» 🙂';
+  return '';
+}
+let ultimaWiki=null;
+function preguntaWiki(raw){ const s=raw.trim(); if(s.length<4||s.length>90||s[0]==='/') return false;
+  return /^[¿]|\?\s*$/.test(s)||/^(qu[eé]|qui[eé]n|qui[eé]nes|cu[aá]l|cu[aá]les|cu[aá]ndo|d[oó]nde|c[oó]mo|cu[aá]nt[oa]s?)\s/i.test(s); }
+function consultaWiki(raw){
+  return raw.toLowerCase().replace(/[¿?¡!.,;:]/g,' ')
+    .replace(/^\s*(qu[eé]|qui[eé]n|qui[eé]nes|cu[aá]l|cu[aá]les|cu[aá]ndo|d[oó]nde|c[oó]mo|cu[aá]nt[oa]s?)\s+(es|son|fue|fueron|era|eran|est[aá]|est[aá]n|significa|significan|se llama|se llaman)?\s*/,'')
+    .replace(/^(un|una|el|la|los|las|de|del|de la)\s+/,'').replace(/\s+/g,' ').trim().slice(0,100);
+}
+async function buscarWiki(raw){
+  const q=consultaWiki(raw); if(q.length<3) return null;
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),9000);
+  try{
+    const u='https://es.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=1&gsrsearch='+encodeURIComponent(q)+'&prop=extracts&exintro=1&explaintext=1&exsentences=3&redirects=1';
+    const r=await fetch(u,{signal:ctl.signal}); if(!r.ok) return null;
+    const d=await r.json(); const pg=d&&d.query&&d.query.pages; if(!pg) return null;
+    const p=Object.values(pg)[0]; const ex=String((p&&p.extract)||'').trim();
+    if(ex.length<30||/pued(e|en) referirse a/i.test(ex.slice(0,250))||G_ADULTO.test(limpiar(ex))) return null;
+    return {titulo:String(p.title||''), texto:ex.slice(0,700)};
+  }catch(e){ return null; } finally{ clearTimeout(to); }
+}
+function sinRespuesta(t){ const c=chat();
+  if(!esDueno()){ add('b','Todavía no sé responder eso 🤔 Prueba preguntándolo de otra forma.'); return; }
+  c.pending=t; add('b','Todavía no sé responder eso 🤔\nEscribe tu respuesta para enseñarme (o "saltar").'); }
+function wikiResponder(raw,t){
+  add('b','🔎 No lo tengo guardado, lo busco en Wikipedia…');
+  buscarWiki(raw).then(w=>{
+    if(w){ ultimaWiki={q:t,a:w.texto}; add('b',w.texto+'\n\n📚 Fuente: Wikipedia — «'+w.titulo+'»'+(esDueno()?'\nSi quieres que lo recuerde sin internet, escribe /guardar.':'')); }
+    else{ ultimaWiki=null; sinRespuesta(t); }
+  });
+}
+
+const APP_VERSION='6.0';
+async function mostrarVersion(){
+  let cache='(sin instalar aún)'; try{ const k=(await caches.keys()).filter(x=>x.indexOf('atlas-ia')===0); if(k.length) cache=k.join(', '); }catch(e){}
+  add('b','ℹ️ ATLAS IA v'+APP_VERSION+'\nCaché instalada: '+cache+'\nTemas: '+Object.keys(saber).length+' · Imágenes: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\n\nSi la caché no dice atlas-ia-19, cierra y abre la app dos veces para actualizarla.');
+}
+$('verl').onclick=e=>{ e.preventDefault(); mostrarVersion(); }; $('ver').onclick=mostrarVersion;
+document.addEventListener('copy',e=>{ try{ const t=String(getSelection()); if(t&&e.clipboardData){ e.clipboardData.setData('text/plain',t); e.preventDefault(); } }catch(_){} });
+$('clr').onclick=e=>{ e.preventDefault(); const c=chat(); c.msgs=[{r:'b',t:saludo()}]; c.pending=nombre?null:'__nombre__'; persist(); render(); };
+$('forget').onclick=e=>{ e.preventDefault(); if(!esDueno()){ add('b','🔒 Solo el dueño puede borrar lo aprendido.'); return; } if(confirm('¿Borrar todo lo que aprendí?')){ aprendido={}; cargar(); guardar(); add('b','Listo, olvidé lo aprendido 🧹'); } };
+// Theme
+const themeBtn = $('theme');
+const mqDark = matchMedia('(prefers-color-scheme: dark)');
+function efectivo(t){ return (t==='dark'||t==='light') ? t : (mqDark.matches?'dark':'light'); }
+function applyTheme(t){
+  document.body.classList.remove('light','dark');
+  if(t==='light') document.body.classList.add('light');
+  else if(t==='dark') document.body.classList.add('dark');
+  localStorage.setItem('atlas-theme', t||'auto');
+  document.querySelectorAll('meta[name=theme-color]').forEach(m=>{ if(!m.dataset.o) m.dataset.o=m.content; m.content = t==='dark'?'#000000':t==='light'?'#ffffff':m.dataset.o; });
+  themeBtn.textContent = efectivo(t)==='dark' ? '🌙' : '☀️';
+  themeBtn.title = efectivo(t)==='dark' ? 'Modo oscuro (toca para claro)' : 'Modo claro (toca para oscuro)';
+}
+let curTheme = localStorage.getItem('atlas-theme') || 'auto';
+applyTheme(curTheme);
+themeBtn.onclick = ()=>{
+  curTheme = efectivo(curTheme)==='dark' ? 'light' : 'dark';
+  applyTheme(curTheme);
+};
+(mqDark.addEventListener?mqDark.addEventListener.bind(mqDark,'change'):mqDark.addListener.bind(mqDark))(()=>{ if(curTheme==='auto') applyTheme('auto'); });
+
+// Quick chips
+const chipsList = [
+  '¿Qué puedes hacer?',
+  '15% de 200',
+  'Cuéntame un chiste',
+  'Cómo se dice gracias en inglés',
+  'Crea una imagen de un robot',
+  'Capital de Francia',
+  'Tabla periódica',
+  '/ayuda'
+];
+chipsList.forEach(c=>{
+  const b=document.createElement('button');
+  b.textContent=c;
+  if(c==='/ayuda') b.id='chipAyuda';
+  b.onclick=()=>{ inp.value=c; go(); };
+  $('chips').appendChild(b);
+});
+refrescarDueno();
+
+// Typing indicator
+function showTyping(){
+  const d=document.createElement('div');
+  d.className='typing';
+  d.id='typing';
+  d.innerHTML='<span></span><span></span><span></span>';
+  $('msgs').appendChild(d);
+  $('msgs').scrollTop=$('msgs').scrollHeight;
+}
+function hideTyping(){ const t=$('typing'); if(t) t.remove(); }
+
+// Patch go with typing delay (keep original logic)
+const originalGo = go;
+go = function(){
+  const raw = inp.value.trim();
+  if(!raw) return;
+  showTyping();
+  // clear input immediately so it feels responsive
+  const saved = raw;
+  inp.value = '';
+  inp.style.height = 'auto';
+  setTimeout(()=>{
+    hideTyping();
+    // temporarily put value back so originalGo reads it, then clear again
+    inp.value = saved;
+    originalGo();
+  }, 220 + Math.random()*180);
+};
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// ===== v5.7: instalación como app (sin servicios de terceros) =====
+let _pi=null;
+const _estaInstalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function _mostrarInst(){ const a=$('instl'); if(a) a.style.display=_estaInstalada()?'none':''; }
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _pi=e; _mostrarInst(); });
+addEventListener('appinstalled',()=>{ _pi=null; _mostrarInst(); add('b','✅ ¡ATLAS IA quedó instalada! Ábrela desde el icono de tu pantalla de inicio.'); });
+$('instl').onclick=async e=>{ e.preventDefault();
+  if(_pi){ _pi.prompt(); try{ await _pi.userChoice; }catch(x){} _pi=null; _mostrarInst(); }
+  else add('b','📲 Para instalar: abre el menú ⋮ de Chrome y toca «Instalar app» (o «Añadir a la pantalla de inicio»). Si no aparece, cierra y abre la app una vez con internet para que termine de guardarse.');
+};
+_mostrarInst();
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+
+guardar(); render(); persist();
+
+// Soft haptic on Android
+$('send').addEventListener('click',()=>{ if(navigator.vibrate) navigator.vibrate(10); });
+</script>
+</body>
+</html>
