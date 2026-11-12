@@ -888,10 +888,10 @@ function wikiResponder(raw,t){
   });
 }
 
-const APP_VERSION='6.0';
+const APP_VERSION='6.1';
 async function mostrarVersion(){
   let cache='(sin instalar aún)'; try{ const k=(await caches.keys()).filter(x=>x.indexOf('atlas-ia')===0); if(k.length) cache=k.join(', '); }catch(e){}
-  add('b','ℹ️ ATLAS IA v'+APP_VERSION+'\nCaché instalada: '+cache+'\nTemas: '+Object.keys(saber).length+' · Imágenes: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\n\nSi la caché no dice atlas-ia-19, cierra y abre la app dos veces para actualizarla.');
+  add('b','ℹ️ ATLAS IA v'+APP_VERSION+'\nCaché instalada: '+cache+'\nTemas: '+Object.keys(saber).length+' · Imágenes: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\n\nSi la caché no dice atlas-ia-20, cierra y abre la app dos veces para actualizarla.');
 }
 $('verl').onclick=e=>{ e.preventDefault(); mostrarVersion(); }; $('ver').onclick=mostrarVersion;
 document.addEventListener('copy',e=>{ try{ const t=String(getSelection()); if(t&&e.clipboardData){ e.clipboardData.setData('text/plain',t); e.preventDefault(); } }catch(_){} });
