@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Prueba cerebro ATLAS</title>
+<style>
+body{margin:0;background:#0d0d12;color:#eee;font:16px system-ui,sans-serif;padding:14px;max-width:600px;margin:auto}
+h1{font-size:19px}.c{background:#1a1a24;border-radius:12px;padding:12px;margin:10px 0}
+button,select,input{font:inherit;border-radius:10px;border:0;padding:12px;width:100%;box-sizing:border-box;margin-top:8px}
+button{background:#6d28d9;color:#fff;font-weight:700}button:disabled{opacity:.5}
+select,input{background:#262633;color:#fff}.m{margin:8px 0;white-space:pre-wrap}.u{color:#a5b4fc}.mu{color:#9ca3af;font-size:13px}
+</style></head><body>
+<h1>🧠 Prueba de cerebro · ATLAS</h1>
+<div class="c" id="est">Revisando tu celular…</div>
+<div class="c"><select id="mod"></select>
+<button id="go" disabled>Descargar y activar (solo con Wi-Fi)</button>
+<div class="mu" id="pr"></div></div>
+<div class="c"><div id="chat"></div>
+<input id="q" placeholder="Escríbele algo…" disabled><button id="env" disabled>Enviar</button></div>
+<div class="mu">Es una prueba aparte: no toca ATLAS IA. Si la pestaña se cierra sola, tu celular no aguanta el modelo.</div>
+<script type="module">
+const $=i=>document.getElementById(i);
+let wl,eng,hist=[{role:'system',content:'Eres ATLAS IA, un asistente amable que habla en español. Responde corto (máximo 3 frases). Si no sabes algo, dilo con sinceridad. No inventes datos.'}];
+try{
+ if(!navigator.gpu) throw new Error('Tu navegador no tiene WebGPU. Prueba con Chrome actualizado.');
+ const ad=await navigator.gpu.requestAdapter(); if(!ad) throw new Error('Tu celular no ofrece GPU para el navegador.');
+ wl=await import('https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.79/+esm');
+ const L=wl.prebuiltAppConfig.model_list.filter(m=>/(Qwen2\.5-0\.5B|SmolLM2-360M).*Instruct/.test(m.model_id));
+ if(!L.length) throw new Error('No encontré modelos chicos disponibles.');
+ $('mod').innerHTML=L.map(m=>`<option value="${m.model_id}">${m.model_id} (~${Math.round(m.vram_required_MB||0)} MB de memoria)</option>`).join('');
+ $('est').textContent='✅ Tu celular tiene WebGPU. Elige un modelo y descarga.'; $('go').disabled=false;
+}catch(e){$('est').textContent='❌ '+e.message}
+$('go').onclick=async()=>{ $('go').disabled=true;
+ try{ eng=await wl.CreateMLCEngine($('mod').value,{initProgressCallback:p=>{$('pr').textContent=p.text}});
+  $('pr').textContent='✅ Cerebro listo (ya puedes desconectar el internet).';$('q').disabled=$('env').disabled=false;
+ }catch(e){$('pr').textContent='❌ No se pudo cargar: '+e.message;$('go').disabled=false}};
+const add=(c,t)=>{const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('chat').appendChild(d);return d};
+$('env').onclick=async()=>{const t=$('q').value.trim();if(!t)return;$('q').value='';add('u','Tú: '+t);hist.push({role:'user',content:t});
+ const d=add('','ATLAS: …');$('env').disabled=true;let r='';
+ try{for await(const ch of await eng.chat.completions.create({messages:hist,stream:true,max_tokens:200,temperature:.6})){r+=ch.choices[0]?.delta?.content||'';d.textContent='ATLAS: '+r}
+  hist.push({role:'assistant',content:r});hist=[hist[0],...hist.slice(-6)]}catch(e){d.textContent='❌ '+e.message}
+ $('env').disabled=false};
+</script></body></html>
