@@ -1,5 +1,5 @@
-const C = "atlas-ia-19";
-const F = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "logo.png", "personalizar.js"];
+const C = "atlas-ia-20";
+const F = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "logo.png", "personalizar.js", "nube.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(C).then(c => c.addAll(F)));
   self.skipWaiting();
