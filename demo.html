@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATLAS BRAIN — prueba local</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#101722;color:#edf3fa;max-width:760px;margin:30px auto;padding:0 16px}
+  .box{background:#1b2736;border:1px solid #34465c;border-radius:14px;padding:18px;margin-bottom:16px}
+  #log{min-height:220px;max-height:360px;overflow:auto;white-space:pre-wrap;line-height:1.5}
+  input,button{font:inherit;border-radius:9px;padding:11px;border:1px solid #52647a}
+  input{box-sizing:border-box;width:100%;background:#0f1824;color:white;margin:6px 0}
+  button{background:#3a78c2;color:white;cursor:pointer;margin:4px 4px 4px 0}
+  button.secondary{background:#2a3a4f}
+  button.danger{background:#a23b3b}
+  button:focus-visible,input:focus-visible{outline:2px solid #8ec1ff;outline-offset:2px}
+  .muted{color:#aab9ca;font-size:.92rem}
+  ul{list-style:none;padding:0;margin:8px 0}
+  li{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid #34465c}
+  li span{flex:1;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<h1>🧠 ATLAS BRAIN v2.0</h1>
+<p class="muted">Demostración independiente. Todo se guarda en el almacenamiento local del navegador.</p>
+
+<div class="box">
+  <div id="log" aria-live="polite">ATLAS: ¡Hola! Soy ATLAS. Prueba: «el gato es un mamífero», «un mamífero es un animal», «¿un gato es un animal?», «¿por qué?», «cuánto es 12+3*2».</div>
+  <form id="chat">
+    <input id="message" aria-label="Mensaje" autocomplete="off" placeholder="Escribe un mensaje…" required>
+    <button type="submit">Enviar</button>
+  </form>
+</div>
+
+<div class="box">
+  <h3>Enseñarle un conocimiento</h3>
+  <input id="question" aria-label="Pregunta" placeholder="Pregunta o concepto">
+  <input id="answer" aria-label="Respuesta" placeholder="Respuesta que debe recordar">
+  <button id="teach" type="button">Guardar aprendizaje</button>
+  <p id="status" class="muted" role="status"></p>
+</div>
+
+<div class="box">
+  <h3>Memoria <span id="stats" class="muted"></span></h3>
+  <ul id="facts"></ul>
+  <button id="export" type="button" class="secondary">Exportar copia</button>
+  <button id="import" type="button" class="secondary">Importar copia</button>
+  <button id="clear" type="button" class="danger">Borrar toda la memoria</button>
+  <input id="file" type="file" accept="application/json,.json" hidden>
+</div>
+
+<script src="atlas-brain.js"></script>
+<script>
+  const brain = new AtlasBrain();
+  const log = document.getElementById("log");
+  const statusEl = document.getElementById("status");
+  const factsEl = document.getElementById("facts");
+  const statsEl = document.getElementById("stats");
+
+  function renderMemory() {
+    const s = brain.getStats();
+    statsEl.textContent = "(" + s.learnedFacts + " conocimientos, " + s.relations + " relaciones, " + s.rememberedItems + " datos)";
+    factsEl.textContent = "";
+    for (const r of brain.listRelations()) {
+      const li = document.createElement("li");
+      const text = document.createElement("span");
+      text.textContent = r.subject + " es " + r.category;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "secondary";
+      del.textContent = "Olvidar";
+      del.addEventListener("click", () => { brain.forget(r.subject); renderMemory(); });
+      li.append(text, del);
+      factsEl.append(li);
+    }
+    for (const f of brain.listFacts()) {
+      const li = document.createElement("li");
+      const text = document.createElement("span");
+      text.textContent = f.question + " → " + f.answer;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "secondary";
+      del.textContent = "Olvidar";
+      del.addEventListener("click", () => { brain.forget(f.question); renderMemory(); });
+      li.append(text, del);
+      factsEl.append(li);
+    }
+  }
+
+  document.getElementById("chat").addEventListener("submit", e => {
+    e.preventDefault();
+    const input = document.getElementById("message");
+    const user = input.value.trim();
+    if (!user) return;
+    const r = brain.think(user);
+    log.textContent += "\n\nTÚ: " + user + "\nATLAS: " + r.answer +
+      (r.trace ? "\n   🧠 " + r.source + " · " + r.trace : "");
+    log.scrollTop = log.scrollHeight;
+    input.value = "";
+    renderMemory();
+  });
+
+  document.getElementById("teach").addEventListener("click", () => {
+    const q = document.getElementById("question").value;
+    const a = document.getElementById("answer").value;
+    const result = brain.learn(q, a);
+    statusEl.textContent = result.message || result.reason;
+    if (result.ok) {
+      document.getElementById("question").value = "";
+      document.getElementById("answer").value = "";
+      renderMemory();
+    }
+  });
+
+  document.getElementById("export").addEventListener("click", () => {
+    const blob = new Blob([brain.exportMemory()], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "atlas-memory.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  const fileInput = document.getElementById("file");
+  document.getElementById("import").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const result = brain.importMemory(await file.text());
+    statusEl.textContent = result.ok
+      ? "Importados " + result.importedFacts + " conocimientos, " + result.importedRelations + " relaciones y " + result.importedItems + " datos."
+      : result.reason;
+    fileInput.value = "";
+    renderMemory();
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    if (confirm("¿Borrar toda la memoria de ATLAS en este navegador?")) {
+      brain.clearAll();
+      statusEl.textContent = "Memoria borrada.";
+      renderMemory();
+    }
+  });
+
+  renderMemory();
+</script>
+</body>
+</html>
