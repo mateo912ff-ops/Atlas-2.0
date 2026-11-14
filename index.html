@@ -35,9 +35,14 @@ header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
 #chips button{flex:none;background:none;border:1px solid var(--border);color:var(--text);border-radius:999px;padding:7px 12px;font:inherit;font-size:14px}
 #stat{display:flex;justify-content:space-between;gap:8px;padding:4px 14px;font-size:12px;color:var(--muted);background:var(--surface)}
 #stat a{color:var(--muted);text-decoration:underline;margin-left:10px}
-#bar{display:flex;gap:8px;padding:10px 12px;background:var(--surface)}
+#bar{display:flex;gap:8px;padding:10px 12px;background:var(--surface);align-items:flex-end}
 textarea{flex:1;resize:none;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font:inherit;background:var(--bg);color:var(--text);max-height:120px}
-#send{border:0;background:var(--accent-bg);color:var(--on-accent);border-radius:50%;width:44px;height:44px;font-size:18px}
+#send,#mic{border:0;background:var(--accent-bg);color:var(--on-accent);border-radius:50%;width:44px;height:44px;font-size:18px;flex:none}
+#mic{background:var(--bot);color:var(--text);border:1px solid var(--border)}
+#mic.listening{background:#c62828;color:#fff;border-color:#c62828;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+#vision-bar{display:none}
+#vision-bar.on{display:flex}
 
 header{display:flex;align-items:center;gap:10px}
 header>div{flex:1;min-width:0}
@@ -91,12 +96,18 @@ h1 .lg{box-shadow:0 0 0 1px var(--silver)}
   <aside id="drawer"><div class="dh"><b>Tus chats</b><button id="newc">＋ Nuevo chat</button></div><div id="list"></div></aside>
   <div id="msgs"></div>
   <div id="chips"></div>
-  <div id="stat"><span id="count"></span><span class="lnks"><a href="#" id="copyl">📋 Copiar lo aprendido</a><a href="#" id="respl">💾 Respaldo</a><a href="#" id="restl">📥 Restaurar</a><a href="#" id="instl" style="display:none">📲 Instalar app</a><a href="#" id="verl">ℹ️ Versión</a><a href="#" id="clr">Limpiar conversación</a><a href="#" id="forget">Olvidar lo aprendido</a></span></div>
+  <div id="stat"><span id="count"></span><span class="lnks"><a href="#" id="copyl">📋 Copiar lo aprendido</a><a href="#" id="respl">💾 Respaldo</a><a href="#" id="restl">📥 Restaurar</a><a href="#" id="instl" style="display:none">📲 Instalar app</a><a href="#" id="voztts">🔊 Voz (hablar)</a><a href="#" id="vision">👁 Ver pantalla</a><a href="#" id="verl">ℹ️ Versión</a><a href="#" id="clr">Limpiar conversación</a><a href="#" id="forget">Olvidar lo aprendido</a></span></div>
   <div id="bar">
-    <textarea id="inp" rows="1" placeholder="Escribe un mensaje…"></textarea>
+    <button id="mic" type="button" aria-label="Hablar" title="Hablar (español)">🎤</button>
+    <textarea id="inp" rows="1" placeholder="Escribe o habla en español…"></textarea>
     <button id="send" type="button" aria-label="Enviar">➤</button>
   </div>
-  <div id="ver" title="Ver versión">ATLAS IA · v6.1 · local & offline</div>
+  <div id="vision-bar" style="display:none;padding:6px 12px;background:var(--surface);border-top:1px solid var(--border);align-items:center;gap:10px;flex-wrap:wrap">
+    <video id="vision-preview" autoplay muted playsinline style="width:72px;height:48px;object-fit:cover;border-radius:8px;background:#000;border:1px solid var(--border)"></video>
+    <span id="vision-status" style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Pantalla compartida activa (solo si aceptaste)</span>
+    <button id="vision-stop" type="button" style="background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 10px;font-size:13px">Detener visión</button>
+  </div>
+  <div id="ver" title="Ver versión">ATLAS IA · v6.2.1 · local & offline · voz app</div>
 </div>
 <script src="personalizar.js"></script>
 <script type="module" src="nube.js"></script>
@@ -888,10 +899,12 @@ function wikiResponder(raw,t){
   });
 }
 
-const APP_VERSION='6.1';
+const APP_VERSION='6.2.1';
 async function mostrarVersion(){
   let cache='(sin instalar aún)'; try{ const k=(await caches.keys()).filter(x=>x.indexOf('atlas-ia')===0); if(k.length) cache=k.join(', '); }catch(e){}
-  add('b','ℹ️ ATLAS IA v'+APP_VERSION+'\nCaché instalada: '+cache+'\nTemas: '+Object.keys(saber).length+' · Imágenes: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\n\nSi la caché no dice atlas-ia-20, cierra y abre la app dos veces para actualizarla.');
+  const vozOn = localStorage.getItem('atlas_voz_tts')!=='0';
+  const visOn = !!window._visionStream;
+  add('b','ℹ️ ATLAS IA v'+APP_VERSION+'\nCaché instalada: '+cache+'\nTemas: '+Object.keys(saber).length+' · Imágenes: '+(modoImg==='auto'?'automático 🌐':'sin internet ✏️')+'\nVoz (TTS español): '+(vozOn?'activada 🔊':'desactivada')+'\nVisión de pantalla: '+(visOn?'activa 👁':'off')+'\n\nNuevo en 6.2.1: voz de la app (más natural, neural) + fallback a sistema, micrófono en español y visión de pantalla opcional (solo si aceptás y se puede desactivar).\n\nSi la caché no dice atlas-ia-21, cierra y abre la app dos veces para actualizarla.');
 }
 $('verl').onclick=e=>{ e.preventDefault(); mostrarVersion(); }; $('ver').onclick=mostrarVersion;
 document.addEventListener('copy',e=>{ try{ const t=String(getSelection()); if(t&&e.clipboardData){ e.clipboardData.setData('text/plain',t); e.preventDefault(); } }catch(_){} });
@@ -985,6 +998,242 @@ guardar(); render(); persist();
 
 // Soft haptic on Android
 $('send').addEventListener('click',()=>{ if(navigator.vibrate) navigator.vibrate(10); });
+
+// ===== v6.2: Voz en español + visión de pantalla opcional (solo con permiso, desactivable) =====
+// No borra ninguna función anterior. Todo offline donde el navegador lo permita.
+(function(){
+  // --- Preferencias de voz ---
+  // atlas_voz_tts: '0' = off | '1'/ausente = on
+  // atlas_voz_modo: 'app' (neural de la app) | 'sistema' (dispositivo)
+  function vozTTSOn(){ return localStorage.getItem('atlas_voz_tts') !== '0'; }
+  function vozModo(){ return localStorage.getItem('atlas_voz_modo') || 'app'; }
+  function setVozTTS(on){ localStorage.setItem('atlas_voz_tts', on ? '1' : '0'); updateVozUI(); }
+  function setVozModo(m){ localStorage.setItem('atlas_voz_modo', m); updateVozUI(); }
+  function updateVozUI(){
+    const a = $('voztts');
+    if(!a) return;
+    if(!vozTTSOn()) a.textContent = '🔇 Voz OFF';
+    else a.textContent = vozModo() === 'app' ? '🎙️ Voz app' : '🔊 Voz sistema';
+  }
+  updateVozUI();
+  $('voztts').onclick = e => {
+    e.preventDefault();
+    if(!vozTTSOn()){
+      setVozTTS(true);
+      setVozModo('app');
+      hablar('Voz de la app activada. Suena más natural.');
+      add('b','🎙️ Voz de la app activada (más natural). Toca de nuevo para cambiar a la del sistema o apagar.');
+    } else if(vozModo() === 'app'){
+      setVozModo('sistema');
+      hablar('Ahora uso la voz del dispositivo.');
+      add('b','🔊 Cambié a la voz del sistema. Toca de nuevo para apagar la voz.');
+    } else {
+      setVozTTS(false);
+      if(window.speechSynthesis) speechSynthesis.cancel();
+      if(window._atlasAudio){ try{ window._atlasAudio.pause(); }catch(x){} }
+      add('b','🔇 Voz desactivada.');
+    }
+  };
+
+  // --- TTS: voz de la app (neural) + fallback al sistema ---
+  let _esVoice = null;
+  let _atlasAudio = null;
+  function pickSpanishVoice(){
+    if(!window.speechSynthesis) return null;
+    const vs = speechSynthesis.getVoices();
+    const prefer = ['es-AR','es_AR','es-MX','es_MX','es-ES','es_ES','es-US','es'];
+    for(const p of prefer){
+      const v = vs.find(x => (x.lang||'').toLowerCase().replace('_','-').startsWith(p.toLowerCase().replace('_','-')));
+      if(v){ _esVoice = v; return v; }
+    }
+    _esVoice = vs.find(x => /es|spanish|español/i.test((x.lang||'')+' '+(x.name||''))) || null;
+    return _esVoice;
+  }
+  if(window.speechSynthesis){
+    speechSynthesis.onvoiceschanged = pickSpanishVoice;
+    pickSpanishVoice();
+  }
+  function limpiarParaVoz(t){
+    return String(t)
+      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}📚🔎✅❌🔒💡🔊🔇👁🎤📋💾📥📲ℹ️🧹🤔]+/gu,' ')
+      .replace(/https?:\/\/\S+/g,'')
+      .replace(/\s+/g,' ')
+      .trim()
+      .slice(0, 280);
+  }
+  // Voz de la app: TTS neural (suena mucho mejor que la del teléfono)
+  async function hablarApp(texto){
+    const clean = limpiarParaVoz(texto);
+    if(!clean) return;
+    try{
+      if(_atlasAudio){ try{ _atlasAudio.pause(); _atlasAudio = null; }catch(e){} }
+      if(window.speechSynthesis) speechSynthesis.cancel();
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=' + encodeURIComponent(clean);
+      const res = await fetch(url, { mode: 'cors' });
+      if(!res.ok) throw new Error('tts');
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      _atlasAudio = audio;
+      window._atlasAudio = audio;
+      audio.onended = () => { URL.revokeObjectURL(audioUrl); _atlasAudio = null; };
+      audio.onerror = () => { URL.revokeObjectURL(audioUrl); hablarSistema(texto); };
+      await audio.play();
+    }catch(e){
+      hablarSistema(texto);
+    }
+  }
+  function hablarSistema(texto){
+    if(!window.speechSynthesis) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(limpiarParaVoz(texto));
+      u.lang = 'es-AR';
+      const v = _esVoice || pickSpanishVoice();
+      if(v) u.voice = v;
+      u.rate = 1.05;
+      u.pitch = 1.0;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function hablar(texto){
+    if(!vozTTSOn() || !texto) return;
+    if(vozModo() === 'app') hablarApp(texto);
+    else hablarSistema(texto);
+  }
+
+  // Envolver add para hablar respuestas del bot
+  const _origAdd = add;
+  add = function(r,t,img,cap,draw,online){
+    _origAdd(r,t,img,cap,draw,online);
+    if(r==='b' && t && typeof t==='string' && !t.startsWith('🔎') && !t.startsWith('ℹ️')){
+      // Hablar solo mensajes normales, no indicadores de búsqueda
+      setTimeout(()=>hablar(t), 80);
+    }
+  };
+
+  // --- STT (reconocimiento de voz) en español ---
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null, listening = false;
+  const micBtn = $('mic');
+  if(SpeechRec){
+    recog = new SpeechRec();
+    recog.lang = 'es-AR';
+    recog.interimResults = false;
+    recog.continuous = false;
+    recog.maxAlternatives = 1;
+    recog.onresult = ev => {
+      const txt = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript) || '';
+      if(txt){
+        inp.value = (inp.value ? inp.value.trim()+' ' : '') + txt.trim();
+        inp.dispatchEvent(new Event('input'));
+        // Auto-enviar si quedó algo razonable
+        if(inp.value.trim().length > 1) setTimeout(()=>go(), 200);
+      }
+    };
+    recog.onerror = e => {
+      listening = false;
+      micBtn.classList.remove('listening');
+      if(e.error === 'not-allowed') add('b','🎤 Necesito permiso de micrófono. Actívalo en los ajustes del navegador/app y vuelve a tocar el micrófono.');
+      else if(e.error !== 'aborted' && e.error !== 'no-speech') add('b','🎤 No pude oír bien. Prueba de nuevo o escribe.');
+    };
+    recog.onend = () => { listening = false; micBtn.classList.remove('listening'); };
+    micBtn.onclick = () => {
+      if(listening){ try{ recog.stop(); }catch(e){} listening=false; micBtn.classList.remove('listening'); return; }
+      try{
+        recog.lang = 'es-AR';
+        recog.start();
+        listening = true;
+        micBtn.classList.add('listening');
+        if(navigator.vibrate) navigator.vibrate(15);
+      }catch(e){
+        add('b','🎤 El reconocimiento de voz no está disponible ahora. En algunos dispositivos necesita internet o permiso.');
+      }
+    };
+  } else {
+    micBtn.onclick = () => add('b','🎤 Tu navegador no soporta reconocimiento de voz. Puedes escribir con el teclado.');
+  }
+
+  // --- Visión de pantalla (getDisplayMedia) — solo si el usuario acepta, y se puede desactivar ---
+  window._visionStream = null;
+  const visionBar = $('vision-bar');
+  const visionPreview = $('vision-preview');
+  const visionStop = $('vision-stop');
+  function stopVision(){
+    if(window._visionStream){
+      window._visionStream.getTracks().forEach(t => t.stop());
+      window._visionStream = null;
+    }
+    if(visionPreview) visionPreview.srcObject = null;
+    if(visionBar) visionBar.classList.remove('on');
+    const a = $('vision');
+    if(a) a.textContent = '👁 Ver pantalla';
+  }
+  visionStop.onclick = () => {
+    stopVision();
+    add('b','👁 Visión de pantalla desactivada. Ya no veo lo que compartiste.');
+  };
+  $('vision').onclick = async e => {
+    e.preventDefault();
+    if(window._visionStream){
+      stopVision();
+      add('b','👁 Visión de pantalla desactivada.');
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+      add('b','👁 Tu dispositivo/navegador no permite compartir pantalla desde una web. En Android Chrome a veces solo funciona en pestaña o con restricciones. La función queda disponible cuando el sistema lo permita.');
+      return;
+    }
+    if(!confirm('¿Permitir que ATLAS vea tu pantalla?\n\n• Solo funciona si TÚ aceptas el diálogo del sistema.\n• Puedes desactivarlo en cualquier momento con «Detener visión» o tocando de nuevo «Ver pantalla».\n• No se envía a ningún servidor: queda en este dispositivo.\n• En móvil el soporte es limitado.\n\n¿Continuar?')) return;
+    try{
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor' },
+        audio: false
+      });
+      window._visionStream = stream;
+      visionPreview.srcObject = stream;
+      visionBar.classList.add('on');
+      $('vision').textContent = '👁 Visión ON';
+      stream.getVideoTracks()[0].onended = () => {
+        stopVision();
+        add('b','👁 Dejaste de compartir la pantalla. Visión desactivada.');
+      };
+      add('b','👁 ¡Pantalla compartida! Ahora puedo ver lo que me mostraste (solo en este dispositivo). Toca «Detener visión» o de nuevo «Ver pantalla» para apagarlo.\n\nDime «qué ves» o «captura» si quieres que use la imagen actual.');
+    }catch(err){
+      stopVision();
+      if(err && err.name === 'NotAllowedError') add('b','👁 No aceptaste compartir la pantalla. Sin tu permiso no veo nada. Puedes intentarlo de nuevo cuando quieras.');
+      else add('b','👁 No se pudo iniciar la visión de pantalla. En muchos móviles el sistema limita esta función a pestañas o la bloquea.');
+    }
+  };
+
+  // Comando simple para "qué ves" / captura
+  const _origComando = typeof comando === 'function' ? comando : null;
+  // Se engancha en go vía el flujo existente; añadimos detección ligera
+  const _origGo = go;
+  go = function(){
+    const raw = (inp.value || '').trim().toLowerCase();
+    if((raw === 'qué ves' || raw === 'que ves' || raw === 'qué estás viendo' || raw === 'captura' || raw === 'capturar pantalla') && window._visionStream){
+      inp.value = '';
+      try{
+        const v = visionPreview;
+        const c = document.createElement('canvas');
+        c.width = v.videoWidth || 640;
+        c.height = v.videoHeight || 360;
+        c.getContext('2d').drawImage(v, 0, 0);
+        const url = c.toDataURL('image/jpeg', 0.7);
+        add('u', '📸 Captura de lo que compartiste');
+        add('b', 'Esto es lo que veo ahora de tu pantalla compartida (solo local). No puedo controlar otras apps como un asistente nativo, pero sí ver la imagen que me mostraste.', url, 'Captura de pantalla compartida');
+      }catch(e){
+        add('b','No pude tomar la captura en este momento.');
+      }
+      return;
+    }
+    _origGo();
+  };
+
+  // Actualizar texto de ayuda / qué puedes hacer
+  // (se respeta el resto del conocimiento)
+})();
 </script>
 </body>
 </html>
