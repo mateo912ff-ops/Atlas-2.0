@@ -1,4 +1,4 @@
-/* ATLAS BRAIN v2.0.0
+/* ATLAS BRAIN v2.1.0
  * Motor local de razonamiento simbólico para aplicaciones HTML + JavaScript.
  * No usa internet, APIs ni librerías externas.
  *
@@ -11,7 +11,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "2.0.0";
+  const VERSION = "2.1.0";
 
   const DEFAULTS = {
     storageKey: "atlas_brain_memory_v1",
@@ -22,6 +22,8 @@
     autoLearn: true,         // aprender de frases como "el sol es una estrella"
     safety: true,            // filtro básico de seguridad
     fallback: null,          // función (texto, contexto) => string | Promise<string|null>
+    llm: null,               // modelo de lenguaje: ({ system, messages, onToken }) => Promise<string>
+                             // (ver AtlasBrain.webllm para una IA que corre dentro del navegador)
     now: null                // función que devuelve un Date (útil para tests)
   };
 
@@ -697,7 +699,7 @@
     }
 
     // Piensa una respuesta SIN guardarla en el historial.
-    _think(raw) {
+    _think(raw, useLLM) {
       const input = String(raw == null ? "" : raw).trim().slice(0, MAX_TEXT);
       if (!input) return { input, answer: "Te estoy escuchando. Escribe algo para comenzar.", source: "sistema", trace: "", known: true };
       const n = normalize(input);
@@ -705,6 +707,18 @@
 
       const guard = this._guard(n);
       if (guard) return done(Object.assign({ source: "seguridad" }, guard));
+
+      // Con un modelo de lenguaje activo, el cerebro solo resuelve lo que debe ser exacto
+      // (nombre, cálculos, reloj) y aprende de lo que dices; el resto lo piensa el modelo.
+      if (useLLM) {
+        const p = this._personal(input, n);
+        if (p) return done(Object.assign({ source: "memoria" }, p));
+        const mth = solveMath(input);
+        if (mth) return done(Object.assign({ source: "cálculo" }, mth));
+        const ck = this._clock(n);
+        if (ck) return done(Object.assign({ source: "reloj" }, ck));
+        return { input, needsLLM: true, learned: this._learnStatement(input), known: true };
+      }
 
       if (/^(por que|y por que|como lo sabes|por que lo dices|explicame)$/.test(n)) {
         return done(this._lastTrace
@@ -777,8 +791,97 @@
       return this.think(message).answer;
     }
 
-    // Como think(), pero si no sabe consulta options.fallback (por ejemplo, Wikipedia o una IA).
-    async ask(message) {
+    // Memoria relevante para el modelo de lenguaje: lo que el usuario me enseñó y lo que deduzco.
+    _buildContext(input, learned) {
+      const lines = [];
+      if (this.state.profile.nombre) lines.push("El usuario se llama " + this.state.profile.nombre + ".");
+      const inputWords = words(input);
+      const relevant = Object.entries(this.state.facts)
+        .map(([q, f]) => ({ a: f.answer, s: this._score(inputWords, q, f) }))
+        .filter(x => x.s >= this.options.suggestThreshold)
+        .sort((a, b) => b.s - a.s)
+        .slice(0, 5);
+      for (const x of relevant) lines.push("- " + x.a.slice(0, 300));
+      const seen = new Set();
+      for (const w of normalize(input).split(" ")) {
+        const k = stem(w);
+        if (!this.state.relations[k] || seen.has(k)) continue;
+        seen.add(k);
+        const anc = this._ancestors(k);
+        if (anc.length) lines.push("- " + this._label(k) + " es " + anc.map(x => this._label(x)).join(" y ") + ".");
+      }
+      if (learned) {
+        lines.push(learned.source === "aprendizaje"
+          ? "Nota: el usuario acaba de enseñarte esto y ya quedó guardado en tu memoria."
+          : "Nota del sistema: " + learned.answer);
+      }
+      return lines;
+    }
+
+    _system(lines) {
+      return "Eres ATLAS, un asistente que funciona dentro del dispositivo del usuario. " +
+        "Responde siempre en español, de forma natural, clara y breve (máximo 4 frases, salvo que pidan más). " +
+        "Usa el CONOCIMIENTO DEL USUARIO si es relevante y no lo contradigas. " +
+        "Si no sabes algo, dilo con honestidad: no inventes datos, cifras ni fuentes. " +
+        "No hagas cálculos largos de memoria. " +
+        "Si el usuario parece estar mal o en peligro, responde con calidez y sugiere hablar con una persona de confianza." +
+        (lines.length ? "\n\nCONOCIMIENTO DEL USUARIO:\n" + lines.join("\n") : "");
+    }
+
+    _historyMessages() {
+      const out = [];
+      for (const h of this.state.history.slice(-6)) {
+        out.push({ role: "user", content: String(h.user).slice(0, 500) });
+        out.push({ role: "assistant", content: String(h.assistant).slice(0, 500) });
+      }
+      return out;
+    }
+
+    // Piensa y responde de forma asíncrona.
+    //  - Con options.llm: el modelo de lenguaje razona y redacta; el cerebro aporta memoria,
+    //    cálculos exactos, reloj y filtro de seguridad. Si el modelo falla, responde con reglas.
+    //  - Sin llm: como think(); si no sabe, consulta options.fallback (si existe).
+    // hooks.onToken(textoParcial) permite mostrar la respuesta mientras se escribe.
+    async ask(message, hooks) {
+      hooks = hooks || {};
+      const llm = this.options.llm;
+
+      if (typeof llm === "function") {
+        const r = this._think(message, true);
+        if (!r.needsLLM) {
+          if (r.input) this._record(r);
+          return { answer: r.answer, source: r.source, trace: r.trace, known: r.known };
+        }
+        let failure = null;
+        try {
+          const lines = this._buildContext(r.input, r.learned);
+          const text = await llm({
+            system: this._system(lines),
+            messages: this._historyMessages().concat([{ role: "user", content: r.input }]),
+            onToken: typeof hooks.onToken === "function" ? hooks.onToken : undefined
+          });
+          if (typeof text === "string" && text.trim()) {
+            const out = {
+              input: r.input, answer: text.trim(), source: "ia-local", known: true,
+              trace: "Lo pensé con el modelo de lenguaje local" +
+                (lines.length ? ", usando " + lines.length + " dato(s) de tu memoria." : ", sin datos de tu memoria relevantes.")
+            };
+            this._record(out);
+            return { answer: out.answer, source: out.source, trace: out.trace, known: out.known };
+          }
+          failure = new Error("El modelo no devolvió texto.");
+        } catch (err) {
+          failure = err;
+        }
+        // El modelo falló: se responde con reglas (sin volver a aprender la misma frase).
+        const out = r.learned
+          ? Object.assign({ input: r.input, known: true }, r.learned)
+          : this._think(r.input);
+        this._record(out);
+        return { answer: out.answer, source: out.source, trace: out.trace, known: out.known,
+                 error: failure && failure.message ? String(failure.message) : "El modelo local falló." };
+      }
+
       const r = this._think(message);
       if (!r.input) return { answer: r.answer, source: r.source, trace: r.trace, known: r.known };
       let out = r;
@@ -827,6 +930,71 @@
   }
 
   AtlasBrain.version = VERSION;
+
+  /* ---------- IA que corre dentro del navegador (WebLLM + WebGPU) ----------
+   * Uso:
+   *   const llm = AtlasBrain.webllm({ model: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+   *                                   onProgress: p => console.log(p.text) });
+   *   await llm.load();                 // descarga el modelo la primera vez; luego queda en caché
+   *   const brain = new AtlasBrain({ llm });
+   *   const r = await brain.ask("¿Por qué el cielo es azul?");
+   * La librería se carga desde un CDN la primera vez; el modelo se descarga una sola vez
+   * y se guarda en el navegador. Después no necesita internet. Requiere WebGPU.
+   */
+  AtlasBrain.webllm = function (opts) {
+    const o = Object.assign({
+      model: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+      temperature: 0.6,
+      maxTokens: 400,
+      moduleUrl: "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm",
+      onProgress: null
+    }, opts || {});
+    let enginePromise = null;
+
+    const api = async function (req) {
+      const engine = await api.load();
+      const msgs = [{ role: "system", content: req.system }].concat(req.messages);
+      if (typeof req.onToken === "function") {
+        const stream = await engine.chat.completions.create({
+          messages: msgs, temperature: o.temperature, max_tokens: o.maxTokens, stream: true
+        });
+        let text = "";
+        for await (const chunk of stream) {
+          const d = chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.content;
+          if (d) { text += d; req.onToken(text); }
+        }
+        return text.trim();
+      }
+      const res = await engine.chat.completions.create({
+        messages: msgs, temperature: o.temperature, max_tokens: o.maxTokens
+      });
+      return String((res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content) || "").trim();
+    };
+
+    api.model = o.model;
+    api.supported = () => typeof navigator !== "undefined" && Boolean(navigator.gpu);
+    api.load = function () {
+      if (!enginePromise) {
+        enginePromise = (async () => {
+          if (!api.supported()) {
+            throw new Error("Este navegador no tiene WebGPU, que la IA local necesita. Prueba con una versión reciente de Chrome, Edge o Safari.");
+          }
+          const webllm = await import(o.moduleUrl);
+          const list = (webllm.prebuiltAppConfig && webllm.prebuiltAppConfig.model_list) || [];
+          if (list.length && !list.some(m => m.model_id === o.model)) {
+            throw new Error("El modelo «" + o.model + "» no existe en esta versión de WebLLM. Ejemplos válidos: " +
+              list.slice(0, 5).map(m => m.model_id).join(", ") + ".");
+          }
+          return webllm.CreateMLCEngine(o.model, {
+            initProgressCallback: p => { if (typeof o.onProgress === "function") o.onProgress(p); }
+          });
+        })();
+        enginePromise.catch(() => { enginePromise = null; }); // permite reintentar
+      }
+      return enginePromise;
+    };
+    return api;
+  };
 
   root.AtlasBrain = AtlasBrain;
   if (typeof module !== "undefined" && module.exports) module.exports = AtlasBrain;

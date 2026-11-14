@@ -1,7 +1,7 @@
 {
   "name": "atlas-brain",
-  "version": "2.0.0",
-  "description": "Motor local de razonamiento simbólico: calcula, deduce, aprende de frases y explica cómo piensa.",
+  "version": "2.1.0",
+  "description": "Memoria, razonamiento y herramientas locales para una IA que corre en el navegador (WebLLM) o con reglas.",
   "main": "atlas-brain.js",
   "scripts": {
     "test": "node --test"

@@ -157,3 +157,65 @@ test("exporta e importa también las relaciones", () => {
   assert.strictEqual(b.forget("gato"), true);
   assert.strictEqual(b.getStats().relations, 0);
 });
+
+/* ---------- v2.1: modelo de lenguaje local (simulado) ---------- */
+
+function fakeLLM(log) {
+  return async req => {
+    log.push(req);
+    if (req.onToken) req.onToken("Hola, ");
+    return "Respuesta del modelo.";
+  };
+}
+
+test("con llm: el modelo responde y recibe memoria relevante e historial", async () => {
+  const calls = [];
+  const b = new AtlasBrain({ storageKey: "l1", llm: fakeLLM(calls) });
+  b.learn("capital de Francia", "La capital de Francia es París.");
+  await b.ask("el gato es un mamífero");
+  await b.ask("un mamífero es un animal");
+  const r = await b.ask("cuéntame algo sobre la capital de Francia y los gatos", { onToken: () => {} });
+  assert.strictEqual(r.source, "ia-local");
+  assert.strictEqual(r.answer, "Respuesta del modelo.");
+  const last = calls[calls.length - 1];
+  assert.match(last.system, /CONOCIMIENTO DEL USUARIO/);
+  assert.match(last.system, /París/);
+  assert.match(last.system, /«gato» es «mamífero» y «animal»/);
+  assert.ok(last.messages.length >= 5);
+  assert.strictEqual(last.messages[last.messages.length - 1].role, "user");
+});
+
+test("con llm: seguridad, cálculos, nombre y reloj no pasan por el modelo", async () => {
+  const calls = [];
+  const b = new AtlasBrain({ storageKey: "l2", llm: fakeLLM(calls), now: () => new Date(2026, 0, 5, 9, 7) });
+  assert.strictEqual((await b.ask("me quiero morir")).source, "seguridad");
+  assert.strictEqual((await b.ask("cuánto es 12 + 3 * 2")).answer, "El resultado es 18.");
+  assert.match((await b.ask("me llamo ana")).answer, /Ana/);
+  assert.match((await b.ask("¿qué día es hoy?")).answer, /5 de enero/);
+  assert.strictEqual(calls.length, 0);
+});
+
+test("con llm: aprende de la frase y se lo cuenta al modelo", async () => {
+  const calls = [];
+  const b = new AtlasBrain({ storageKey: "l3", llm: fakeLLM(calls) });
+  await b.ask("el sol es una estrella");
+  assert.strictEqual(b.getStats().relations, 1);
+  assert.match(calls[0].system, /acaba de enseñarte/);
+});
+
+test("con llm: si el modelo falla, responde con reglas e informa el error", async () => {
+  const b = new AtlasBrain({ storageKey: "l4", llm: async () => { throw new Error("sin WebGPU"); } });
+  b.learn("hola mundo", "saludo");
+  const r = await b.ask("hola mundo");
+  assert.strictEqual(r.answer, "saludo");
+  assert.strictEqual(r.error, "sin WebGPU");
+  const t = await b.ask("el gato es un mamífero");
+  assert.match(t.answer, /Entendido/);
+  assert.strictEqual(b.getStats().relations, 1);
+});
+
+test("webllm: avisa claramente si el navegador no tiene WebGPU", async () => {
+  const llm = AtlasBrain.webllm();
+  assert.strictEqual(llm.supported(), false);
+  await assert.rejects(llm.load(), /WebGPU/);
+});

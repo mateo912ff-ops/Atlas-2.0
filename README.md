@@ -1,4 +1,4 @@
-# ATLAS BRAIN v2.0
+# ATLAS BRAIN v2.1
 
 Módulo independiente para proyectos HTML + JavaScript. No modifica los archivos actuales de ATLAS.
 
@@ -55,7 +55,25 @@ Conecta `respuesta` a la interfaz y al sistema de voz que ya utiliza ATLAS. No h
 - `clearConversation()`: borra el historial de conversación.
 - `clearAll()`: borra toda la memoria del módulo.
 
-## Cómo "piensa"
+## IA local dentro del navegador (opcional)
+Sin modelo de lenguaje, ATLAS BRAIN solo puede razonar con reglas y suena "programado". Con `AtlasBrain.webllm()` conversa de forma libre usando una IA que **corre en tu propio dispositivo**:
+
+```javascript
+const llm = AtlasBrain.webllm({
+  model: "Llama-3.2-1B-Instruct-q4f16_1-MLC",      // ~700 MB
+  onProgress: p => console.log(p.text)
+});
+await llm.load();                                    // la primera vez descarga el modelo; luego queda en caché
+const brain = new AtlasBrain({ llm });
+const r = await brain.ask("Explícame por qué el cielo es azul", { onToken: t => mostrar(t) });
+```
+- El modelo redacta y razona; el cerebro le da tu memoria (lo que le enseñaste y lo que deduce), el historial, cálculos exactos, la hora y el filtro de seguridad.
+- Modelos probados en la lista de WebLLM: `SmolLM2-360M-Instruct-q4f16_1-MLC` (~250 MB, español básico), `Llama-3.2-1B-Instruct-q4f16_1-MLC` (~700 MB), `Qwen2.5-1.5B-Instruct-q4f16_1-MLC` (~1,1 GB, mejor calidad).
+- Requisitos: navegador con **WebGPU** (Chrome/Edge recientes y Safari reciente) y memoria suficiente. La primera carga necesita internet y espacio; después funciona sin conexión.
+- Los modelos pequeños se equivocan e inventan más que una IA en la nube. El cerebro les pasa tus datos y les pide que no inventen, pero conviene revisar lo importante.
+- Si no hay WebGPU o el modelo falla, responde con reglas y lo indica en `error`.
+
+## Cómo "piensa" (motor de reglas)
 ATLAS BRAIN razona de forma **simbólica**: combina lo que sabe con reglas lógicas y te enseña cómo llegó a cada respuesta.
 
 ```javascript

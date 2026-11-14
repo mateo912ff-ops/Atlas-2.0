@@ -12,6 +12,8 @@
   input{box-sizing:border-box;width:100%;background:#0f1824;color:white;margin:6px 0}
   button{background:#3a78c2;color:white;cursor:pointer;margin:4px 4px 4px 0}
   button.secondary{background:#2a3a4f}
+  select{font:inherit;border-radius:9px;padding:11px;border:1px solid #52647a;background:#0f1824;color:white;width:100%;margin:6px 0}
+  progress{width:100%;height:10px}
   button.danger{background:#a23b3b}
   button:focus-visible,input:focus-visible{outline:2px solid #8ec1ff;outline-offset:2px}
   .muted{color:#aab9ca;font-size:.92rem}
@@ -21,7 +23,7 @@
 </style>
 </head>
 <body>
-<h1>🧠 ATLAS BRAIN v2.0</h1>
+<h1>🧠 ATLAS BRAIN v2.1</h1>
 <p class="muted">Demostración independiente. Todo se guarda en el almacenamiento local del navegador.</p>
 
 <div class="box">
@@ -30,6 +32,19 @@
     <input id="message" aria-label="Mensaje" autocomplete="off" placeholder="Escribe un mensaje…" required>
     <button type="submit">Enviar</button>
   </form>
+</div>
+
+<div class="box">
+  <h3>🧠 IA local (opcional)</h3>
+  <p class="muted">Descarga un modelo una sola vez (se guarda en este navegador) y después piensa sin internet. Necesita un navegador con WebGPU y buena memoria; en teléfonos usa el modelo ligero.</p>
+  <select id="model" aria-label="Modelo de IA">
+    <option value="SmolLM2-360M-Instruct-q4f16_1-MLC">Ligero · ~250 MB · español básico</option>
+    <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC" selected>Equilibrado · ~700 MB</option>
+    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Mejor calidad · ~1,1 GB</option>
+  </select>
+  <button id="llmOn" type="button">Activar IA local</button>
+  <progress id="prog" max="1" value="0" hidden></progress>
+  <p id="llmStatus" class="muted" role="status"></p>
 </div>
 
 <div class="box">
@@ -87,17 +102,56 @@
     }
   }
 
-  document.getElementById("chat").addEventListener("submit", e => {
+  let busy = false;
+  document.getElementById("chat").addEventListener("submit", async e => {
     e.preventDefault();
+    if (busy) return;
     const input = document.getElementById("message");
     const user = input.value.trim();
     if (!user) return;
-    const r = brain.think(user);
-    log.textContent += "\n\nTÚ: " + user + "\nATLAS: " + r.answer +
-      (r.trace ? "\n   🧠 " + r.source + " · " + r.trace : "");
-    log.scrollTop = log.scrollHeight;
+    busy = true;
     input.value = "";
-    renderMemory();
+    const head = log.textContent + "\n\nTÚ: " + user + "\nATLAS: ";
+    log.textContent = head + (brain.options.llm ? "…" : "");
+    log.scrollTop = log.scrollHeight;
+    try {
+      const r = await brain.ask(user, {
+        onToken: t => { log.textContent = head + t; log.scrollTop = log.scrollHeight; }
+      });
+      log.textContent = head + r.answer +
+        (r.trace ? "\n   🧠 " + r.source + " · " + r.trace : "") +
+        (r.error ? "\n   ⚠️ La IA local falló (" + r.error + "); respondí con reglas." : "");
+    } finally {
+      busy = false;
+      log.scrollTop = log.scrollHeight;
+      renderMemory();
+    }
+  });
+
+  document.getElementById("llmOn").addEventListener("click", async () => {
+    const btn = document.getElementById("llmOn");
+    const prog = document.getElementById("prog");
+    const st = document.getElementById("llmStatus");
+    const llm = AtlasBrain.webllm({
+      model: document.getElementById("model").value,
+      onProgress: p => { prog.hidden = false; prog.value = p.progress || 0; st.textContent = p.text || ""; }
+    });
+    if (!llm.supported()) {
+      st.textContent = "Este navegador no tiene WebGPU. Prueba con una versión reciente de Chrome, Edge o Safari.";
+      return;
+    }
+    btn.disabled = true;
+    st.textContent = "Descargando el modelo (solo la primera vez)…";
+    try {
+      await llm.load();
+      brain.options.llm = llm;
+      prog.hidden = true;
+      st.textContent = "IA local activa ✅ (" + llm.model + "). Ya puedes conversar.";
+    } catch (err) {
+      st.textContent = "No se pudo activar: " + (err && err.message ? err.message : err);
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   document.getElementById("teach").addEventListener("click", () => {

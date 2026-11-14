@@ -1,5 +1,12 @@
 # Cambios
 
+## 2.1.0
+- **IA local real:** `AtlasBrain.webllm()` ejecuta un modelo de lenguaje dentro del navegador (WebLLM + WebGPU). Se descarga una vez y después funciona sin internet ni claves.
+- Con `llm` activo, el modelo razona y redacta con respuestas libres; el cerebro le aporta memoria relevante, historial, cálculos exactos, reloj y filtro de seguridad.
+- `ask(texto, { onToken })` muestra la respuesta mientras se escribe.
+- Si el modelo falla o no hay WebGPU, responde con reglas e informa el motivo en `error`.
+- La demo incluye un panel para activar la IA local (3 modelos a elegir).
+
 ## 2.0.0
 - **Razonamiento:** deduce encadenando lo que sabe (gato → mamífero → animal) y admite cuando no puede probar algo (no asume que sea falso).
 - **Aprende de frases normales:** «el sol es una estrella», «la capital de Francia es París». Rechaza contradicciones y ciclos.
