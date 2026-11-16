@@ -800,6 +800,7 @@ function go(){
     aprendido[q]=[raw]; saber[q]=[raw]; guardar(); add('b','¡Aprendido y guardado! ✅'); return; }
   if(c.pending!=='__nombre__') c.pending=null;
   { const gd=atlasGuard(raw); if(gd){ add('b',gd); return; } }
+  if(window.atlasVision&&window.atlasVision(raw)) return;
   if(comando(raw)) return;
   const r=calcular(raw); if(r){ add('b',r); return; }
   if(generarImagen(raw)) return;
@@ -872,6 +873,7 @@ function atlasGuard(raw){
   return r; }
 let ultimaWiki=null;
 function preguntaWiki(raw){ const s=raw.trim(); if(s.length<4||s.length>90||s[0]==='/') return false;
+  if(/^(que|como|cuando|donde)\s+(hacemos|hago|hacer|hacen|haces|puedo|podemos|vamos|pasa|tal|onda|estas|andas|opinas|piensas|sientes|quieres|prefieres|te parece|haremos|toca)\b/.test(limpiar(s).replace(/[¿?¡!]/g,'').trim())) return false;
   return /^[¿]|\?\s*$/.test(s)||/^(qu[eé]|qui[eé]n|qui[eé]nes|cu[aá]l|cu[aá]les|cu[aá]ndo|d[oó]nde|c[oó]mo|cu[aá]nt[oa]s?)\s/i.test(s); }
 function consultaWiki(raw){
   return raw.toLowerCase().replace(/[¿?¡!.,;:]/g,' ')
@@ -1184,7 +1186,8 @@ $('send').addEventListener('click',()=>{ if(navigator.vibrate) navigator.vibrate
       return;
     }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
-      add('b','👁 Tu dispositivo/navegador no permite compartir pantalla desde una web. En Android Chrome a veces solo funciona en pestaña o con restricciones. La función queda disponible cuando el sistema lo permita.');
+      add('b','👁 Android no deja que una web vea tu pantalla en vivo (es una limitación del navegador, no de ATLAS) 😕\n\nAlternativa que sí funciona: elige una captura de pantalla de tu galería y la analizo.');
+      elegirCaptura();
       return;
     }
     if(!confirm('¿Permitir que ATLAS vea tu pantalla?\n\n• Solo funciona si TÚ aceptas el diálogo del sistema.\n• Puedes desactivarlo en cualquier momento con «Detener visión» o tocando de nuevo «Ver pantalla».\n• No se envía a ningún servidor: queda en este dispositivo.\n• En móvil el soporte es limitado.\n\n¿Continuar?')) return;
@@ -1205,33 +1208,60 @@ $('send').addEventListener('click',()=>{ if(navigator.vibrate) navigator.vibrate
     }catch(err){
       stopVision();
       if(err && err.name === 'NotAllowedError') add('b','👁 No aceptaste compartir la pantalla. Sin tu permiso no veo nada. Puedes intentarlo de nuevo cuando quieras.');
-      else add('b','👁 No se pudo iniciar la visión de pantalla. En muchos móviles el sistema limita esta función a pestañas o la bloquea.');
+      else add('b','👁 No se pudo iniciar la visión de pantalla en este dispositivo 😕 Toca «Ver pantalla» otra vez para elegir una captura de tu galería.');
     }
   };
 
-  // Comando simple para "qué ves" / captura
-  const _origComando = typeof comando === 'function' ? comando : null;
-  // Se engancha en go vía el flujo existente; añadimos detección ligera
-  const _origGo = go;
-  go = function(){
-    const raw = (inp.value || '').trim().toLowerCase();
-    if((raw === 'qué ves' || raw === 'que ves' || raw === 'qué estás viendo' || raw === 'captura' || raw === 'capturar pantalla') && window._visionStream){
-      inp.value = '';
+  // --- Alternativa sin compartir pantalla: elegir una captura/imagen y describirla (colores, forma, brillo) ---
+  function nombreColor(r,g,b){
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/510, d=mx-mn;
+    if(l<0.12) return 'negro'; if(l>0.9) return 'blanco';
+    if(d<28) return l<0.35?'gris oscuro':l>0.7?'gris claro':'gris';
+    let hh; if(mx===r) hh=((g-b)/d+6)%6; else if(mx===g) hh=(b-r)/d+2; else hh=(r-g)/d+4; hh*=60;
+    if(hh<15||hh>=345) return l>0.7?'rosa':'rojo'; if(hh<40) return 'naranja'; if(hh<70) return 'amarillo';
+    if(hh<165) return 'verde'; if(hh<200) return 'turquesa'; if(hh<260) return 'azul'; if(hh<300) return 'morado'; return 'rosa';
+  }
+  function analizarImagen(file){
+    if(!file) return;
+    if(!/^image\//.test(file.type)){ add('b','Elige una imagen (por ejemplo una captura de pantalla) 🙂'); return; }
+    if(file.size>15e6){ add('b','Esa imagen es muy pesada 😕'); return; }
+    const u=URL.createObjectURL(file), im=new Image();
+    im.onload=()=>{
       try{
-        const v = visionPreview;
-        const c = document.createElement('canvas');
-        c.width = v.videoWidth || 640;
-        c.height = v.videoHeight || 360;
-        c.getContext('2d').drawImage(v, 0, 0);
-        const url = c.toDataURL('image/jpeg', 0.7);
-        add('u', '📸 Captura de lo que compartiste');
-        add('b', 'Esto es lo que veo ahora de tu pantalla compartida (solo local). No puedo controlar otras apps como un asistente nativo, pero sí ver la imagen que me mostraste.', url, 'Captura de pantalla compartida');
-      }catch(e){
-        add('b','No pude tomar la captura en este momento.');
-      }
-      return;
-    }
-    _origGo();
+        const W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1,640/Math.max(W,H));
+        const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(W*k)); c.height=Math.max(1,Math.round(H*k));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        const url=c.toDataURL('image/jpeg',0.6);
+        const s=document.createElement('canvas'); s.width=s.height=48; const x=s.getContext('2d'); x.drawImage(im,0,0,48,48);
+        const px=x.getImageData(0,0,48,48).data, cnt={}; let lum=0;
+        for(let i=0;i<px.length;i+=4){ const nm=nombreColor(px[i],px[i+1],px[i+2]); cnt[nm]=(cnt[nm]||0)+1; lum+=px[i]*.299+px[i+1]*.587+px[i+2]*.114; }
+        const tot=px.length/4, br=lum/tot/255;
+        const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]+' '+Math.round(e[1]*100/tot)+'%');
+        add('b','👁 Recibí tu imagen ('+W+'×'+H+', '+(H>W?'vertical':W>H?'horizontal':'cuadrada')+').\nColores que más veo: '+top.join(', ')+'.\nEs una imagen '+(br<.35?'oscura 🌙':br>.65?'clara ☀️':'de brillo medio')+'.\n\nSoy honesto: sin internet no puedo leer el texto ni reconocer objetos de una imagen, solo describir sus colores y forma.',url,'Imagen que elegiste');
+      }catch(e){ add('b','No pude analizar esa imagen 😕'); }
+      URL.revokeObjectURL(u);
+    };
+    im.onerror=()=>{ add('b','No pude abrir esa imagen 😕'); URL.revokeObjectURL(u); };
+    im.src=u;
+  }
+  function elegirCaptura(){
+    const fi=document.createElement('input'); fi.type='file'; fi.accept='image/*';
+    fi.onchange=()=>analizarImagen(fi.files&&fi.files[0]); fi.click();
+  }
+
+  // Comando «qué ves» / «captura» (funciona con Enter y con el botón enviar)
+  window.atlasVision = function(raw){
+    const r = limpiar(raw).replace(/[¿?¡!]/g,'').trim();
+    if(!['que ves','que estas viendo','captura','capturar pantalla'].includes(r)) return false;
+    if(!window._visionStream){ add('b','Todavía no estoy viendo nada 👁 Toca «Ver pantalla» para compartir la pantalla o elegir una captura de tu galería.'); return true; }
+    try{
+      const v = visionPreview;
+      const c = document.createElement('canvas');
+      c.width = v.videoWidth || 640; c.height = v.videoHeight || 360;
+      c.getContext('2d').drawImage(v, 0, 0);
+      add('b', 'Esto es lo que veo ahora de tu pantalla compartida (solo local).', c.toDataURL('image/jpeg', 0.7), 'Captura de pantalla compartida');
+    }catch(e){ add('b','No pude tomar la captura en este momento.'); }
+    return true;
   };
 
   // Actualizar texto de ayuda / qué puedes hacer

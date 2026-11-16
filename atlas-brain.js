@@ -186,7 +186,14 @@
     return null;
   }
 
-  var SKILLS = [cmd, esperando, aprender, recordar, fechas, comparar, decidir, animo, yo];
+  function plan(raw) {
+    if (!/^(que hacemos|que hacemos hoy|que hago|que hago hoy|que hacer|que podemos hacer|que puedo hacer|que hacemos ahora|vamos a hacer algo)$/.test(n(raw))) return null;
+    var ideas = ['🎨 Pídeme un dibujo: «dibuja un dragón»', '🧮 Ponme a prueba con una cuenta: «15% de 200»', '⚖️ Comparemos algo: «diferencia entre gato y perro»', '😄 «Cuéntame un chiste»', '🧠 Enséñame algo con /aprender pregunta | respuesta'];
+    if (S.gustos.length) ideas.unshift('💬 Hablemos de «' + S.gustos[S.gustos.length - 1] + '», que me dijiste que te gusta');
+    return { t: '¡Buena pregunta! Algunas ideas:\n' + ideas.slice(0, 4).join('\n') + '\n\n¿Cuál te late?', why: 'Pregunta abierta sobre qué hacer; propuse actividades' + (S.gustos.length ? ' y puse primero un tema que te gusta.' : '.') };
+  }
+
+  var SKILLS = [cmd, esperando, aprender, recordar, fechas, comparar, decidir, animo, plan, yo];
   function pensar(raw) {
     raw = String(raw || '').trim(); if (!raw || raw.length > 300) return null;
     S.stats.turnos++;
