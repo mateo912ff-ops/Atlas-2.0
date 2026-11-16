@@ -107,7 +107,7 @@ h1 .lg{box-shadow:0 0 0 1px var(--silver)}
     <span id="vision-status" style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Pantalla compartida activa (solo si aceptaste)</span>
     <button id="vision-stop" type="button" style="background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 10px;font-size:13px">Detener visión</button>
   </div>
-  <div id="ver" title="Ver versión">ATLAS IA · v6.3.0 · local & offline · voz app · cerebro</div>
+  <div id="ver" title="Ver versión">ATLAS IA · v6.3.1 · local & offline · voz app · cerebro</div>
 </div>
 <script src="personalizar.js"></script>
 <script src="atlas-brain.js"></script>
@@ -903,7 +903,7 @@ function wikiResponder(raw,t){
   });
 }
 
-const APP_VERSION='6.3.0';
+const APP_VERSION='6.3.1';
 if(window.ATLAS_BRAIN) ATLAS_BRAIN.conectar({ consultar:q=>{ const k=saber[limpiar(q)]; return k?k[0]:null; }, guardarNombre:n=>{ try{ guardarNombre(n); }catch(e){} }, nombre:()=>nombre });
 async function mostrarVersion(){
   let cache='(sin instalar aún)'; try{ const k=(await caches.keys()).filter(x=>x.indexOf('atlas-ia')===0); if(k.length) cache=k.join(', '); }catch(e){}

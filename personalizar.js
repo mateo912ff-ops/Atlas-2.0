@@ -8,7 +8,7 @@ window.ATLAS_PERSONAL = {
 
   // 1) Así se presenta ATLAS cuando abres un chat nuevo.
   //    Cambia el texto que está entre comillas.
-  presentacion: "Soy ATLAS IA 🤖 v6.3.0 con cerebro propio 🧠. Recuerdo lo que me cuentas, comparo temas, respondo temas guardados, calculo, aprendo, hablo en español y (si aceptas) puedo ver tu pantalla compartida. Todo se puede desactivar.",
+  presentacion: "Soy ATLAS IA 🤖 v6.3.1 con cerebro propio 🧠. Recuerdo lo que me cuentas, comparo temas, respondo temas guardados, calculo, aprendo, hablo en español y (si aceptas) puedo ver tu pantalla compartida. Todo se puede desactivar.",
 
   // 2) Cosas que ATLAS puede responder cuando le dices "hola".
   //    Agrega más líneas entre los corchetes. Todas terminan en coma, menos la última.
