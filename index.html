@@ -107,9 +107,10 @@ h1 .lg{box-shadow:0 0 0 1px var(--silver)}
     <span id="vision-status" style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Pantalla compartida activa (solo si aceptaste)</span>
     <button id="vision-stop" type="button" style="background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 10px;font-size:13px">Detener visión</button>
   </div>
-  <div id="ver" title="Ver versión">ATLAS IA · v6.2.1 · local & offline · voz app</div>
+  <div id="ver" title="Ver versión">ATLAS IA · v6.3.0 · local & offline · voz app · cerebro</div>
 </div>
 <script src="personalizar.js"></script>
+<script src="atlas-brain.js"></script>
 <script type="module" src="nube.js"></script>
 <script>
 // CORE-START
@@ -500,7 +501,7 @@ function cerrar(){ document.body.classList.remove('dopen'); }
 function crear(){ nuevo(); persist(); render(); cerrar(); inp.focus(); }
 const _lastPick=new WeakMap();
 const pick=a=>{ if(a.length<2) return a[0]; let i,l=_lastPick.get(a); do{ i=Math.floor(Math.random()*a.length); }while(i===l); _lastPick.set(a,i); return a[i]; };
-const AYUDA='Comandos:\n/ayuda · /aprender pregunta | respuesta\n/buscar texto · /lista · /olvidar pregunta\n/aprendido · /copiar · /nombre · /tema\n/respaldo · /restaurar · /guardar\n\n🛡️ ATLAS GUARD: filtros de seguridad activos (cuida, no castiga).\n✏️ Cambia textos tú mismo en el archivo personalizar.js\n\n🎨 Imágenes: las dibujo yo, sin internet y sin terceros.\n/imagenes auto|offline (auto usa IA en línea si hay servicio) · /clave\n\n«crea una imagen de un gato astronauta»\n«dibuja un atardecer en la playa»\n\nTemas: ciencia, deportes, películas, inglés\nCálculos: 15*4+(10/2), 15% de 200, raíz de 144\nMenú ☰ · 🌓 tema';
+const AYUDA='Comandos:\n/ayuda · /aprender pregunta | respuesta\n/cerebro (estado de mi cerebro)\n/buscar texto · /lista · /olvidar pregunta\n/aprendido · /copiar · /nombre · /tema\n/respaldo · /restaurar · /guardar\n\n🛡️ ATLAS GUARD: filtros de seguridad activos (cuida, no castiga).\n✏️ Cambia textos tú mismo en el archivo personalizar.js\n\n🎨 Imágenes: las dibujo yo, sin internet y sin terceros.\n/imagenes auto|offline (auto usa IA en línea si hay servicio) · /clave\n\n«crea una imagen de un gato astronauta»\n«dibuja un atardecer en la playa»\n\nTemas: ciencia, deportes, películas, inglés\nCálculos: 15*4+(10/2), 15% de 200, raíz de 144\nMenú ☰ · 🌓 tema';
 function textoAprendido(){
   const ks=Object.keys(aprendido); if(!ks.length) return '';
   return 'Lo aprendido por ATLAS IA ('+ks.length+'):\n\n'+ks.map(k=>k+' | '+String(aprendido[k][0]).replace(/\s+/g,' ').trim()).join('\n');
@@ -802,6 +803,7 @@ function go(){
   if(comando(raw)) return;
   const r=calcular(raw); if(r){ add('b',r); return; }
   if(generarImagen(raw)) return;
+  { const b=window.ATLAS_BRAIN&&ATLAS_BRAIN.pensar(raw); if(b){ add('b',b.texto); return; } }
   const t=limpiar(raw);
   if(!saber[t]){ const en=ingles(raw); if(en){ add('b',en); return; } }
   const k=buscar(t);
@@ -899,7 +901,8 @@ function wikiResponder(raw,t){
   });
 }
 
-const APP_VERSION='6.2.1';
+const APP_VERSION='6.3.0';
+if(window.ATLAS_BRAIN) ATLAS_BRAIN.conectar({ consultar:q=>{ const k=saber[limpiar(q)]; return k?k[0]:null; }, guardarNombre:n=>{ try{ guardarNombre(n); }catch(e){} }, nombre:()=>nombre });
 async function mostrarVersion(){
   let cache='(sin instalar aún)'; try{ const k=(await caches.keys()).filter(x=>x.indexOf('atlas-ia')===0); if(k.length) cache=k.join(', '); }catch(e){}
   const vozOn = localStorage.getItem('atlas_voz_tts')!=='0';
